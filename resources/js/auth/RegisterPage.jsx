@@ -72,7 +72,7 @@ export default function RegisterPage() {
           <p className="text-center text-sm mt-3">
             Sudah punya akun?{" "}
             <span
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/")}
               className="text-green-700 font-semibold cursor-pointer hover:underline"
             >
               Login di sini
