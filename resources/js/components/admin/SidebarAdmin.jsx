@@ -1,60 +1,28 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import axios from "axios";
-import {
-    FaHome,
-    FaUsers,
-    FaBook,
-    FaMoneyBillWave,
-    FaSignOutAlt
-} from "react-icons/fa";
+import { FaHome, FaUsers, FaBook, FaMoneyBillWave, FaSignOutAlt } from "react-icons/fa";
+import { logoutUser } from "../../utils/logout";
 
 const SidebarAdmin = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
-    const token = localStorage.getItem("auth_token");
-
-    if (!token) {
-      toast.warn("Kamu belum login!");
-      navigate("/");
-      return;
-    }
-
-    try {
-      await axios.post(
-        "http://127.0.0.1:8000/api/logout",
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        }
-      );
-
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("user");
-
-      toast.success("Logout berhasil 👋");
-      navigate("/");
-    } catch (error) {
-      console.error("Logout gagal:", error);
-      toast.error("Gagal logout. Silakan coba lagi.");
-    }
+    setLoading(true);
+    await logoutUser(navigate);
+    setLoading(false);
   };
 
   const menuItems = [
     { path: "/admin/dashboard", name: "Dashboard", icon: <FaHome /> },
     { path: "/admin/users", name: "Manajemen User", icon: <FaUsers /> },
-    { path: "/admin/category", name: "Manajemen Category", icon: <FaBook /> },
+    { path: "/admin/category-manager", name: "Manajemen Category", icon: <FaBook /> },
     { path: "/admin/sales", name: "Manajemen Penjualan", icon: <FaMoneyBillWave /> },
   ];
 
   return (
-    <div className="bg-gray-800 text-white w-64 min-h-screen p-4 flex flex-col justify-between">
+    <div className="fixed top-0 left-0 bg-gray-800 text-white w-64 h-full p-4 flex flex-col justify-between">
       <div>
         <h2 className="text-2xl font-bold mb-6">Admin Panel</h2>
         <ul>
@@ -76,10 +44,13 @@ const SidebarAdmin = () => {
 
       <button
         onClick={handleLogout}
-        className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded shadow transition mt-4"
+        disabled={loading}
+        className={`flex items-center px-4 py-2 rounded shadow transition mt-4 ${
+          loading ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"
+        }`}
       >
         <FaSignOutAlt className="mr-2" />
-        Logout
+        {loading ? "Logging out..." : "Logout"}
       </button>
     </div>
   );
