@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { API_BASE_URL } from "../../config/api";
+
 
 export default function RegisterPage() {
     const [formData, setFormData] = useState({
