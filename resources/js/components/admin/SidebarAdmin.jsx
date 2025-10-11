@@ -16,7 +16,7 @@ const SidebarAdmin = () => {
 
   const menuItems = [
     { path: "/admin/dashboard", name: "Dashboard", icon: <FaHome /> },
-    { path: "/admin/users", name: "Manajemen User", icon: <FaUsers /> },
+    { path: "/admin/users-manager", name: "Manajemen User", icon: <FaUsers /> },
     { path: "/admin/category-manager", name: "Manajemen Category", icon: <FaBook /> },
     { path: "/admin/sales", name: "Manajemen Penjualan", icon: <FaMoneyBillWave /> },
   ];

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 import CategoryTable from "../../components/admin/CategoryTable";
 import CategoryModal from "../../components/admin/CategoryModal";
-import SearchInputCategory from "../../components/admin/SearchInputCategory";
+import SearchInputCategory from "../../components/admin/SearchInput";
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
