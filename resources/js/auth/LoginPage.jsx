@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { API_BASE_URL } from "../../config/api"; // ✅ pakai base URL
+import { API_BASE_URL } from "../../config/api";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -11,55 +11,65 @@ export default function LoginPage() {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // 🔹 Helper untuk simpan token & user
+    const saveAuthData = (token, user) => {
+        localStorage.setItem("auth_token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+    };
+
     // ---- Handle token dari Google OAuth ----
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const token = params.get("token");
 
-        if (token) {
-            localStorage.setItem("token", token);
+        if (!token) return;
 
-            axios
-                .get(`${API_BASE_URL}/api/user`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                })
-                .then((res) => {
-                    const user = res.data;
-                    localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("auth_token", token);
 
-                    toast.success("Login berhasil via Google 🎉");
+        axios
+            .get(`${API_BASE_URL}/api/user`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            .then((res) => {
+                const user = res.data;
+                saveAuthData(token, user);
 
-                    if (user.email === "admin@mail.com")
-                        navigate("/admin/dashboard");
-                    else navigate("/user/dashboard");
-                })
-                .catch((err) => {
-                    console.error(err);
-                    toast.error("Gagal mendapatkan data user!");
-                });
-        }
+                toast.success("Login berhasil via Google 🎉");
+
+                if (user.email === "admin@mail.com") {
+                    navigate("/admin/dashboard");
+                } else {
+                    navigate("/user/dashboard");
+                }
+            })
+            .catch((err) => {
+                console.error("Error saat ambil data user:", err);
+                toast.error("Gagal mendapatkan data user!");
+                localStorage.removeItem("auth_token");
+            });
     }, [location.search, navigate]);
 
     // ---- Login manual ----
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/login`, {
+            const { data } = await axios.post(`${API_BASE_URL}/api/login`, {
                 email,
                 password,
             });
 
-            const { token, user } = response.data;
-            localStorage.setItem("token", token);
-            localStorage.setItem("user", JSON.stringify(user));
-
+            saveAuthData(data.token, data.user);
             toast.success("Login berhasil 🎉");
 
-            if (user.email === "admin@mail.com") navigate("/admin/dashboard");
-            else navigate("/user/dashboard");
+            if (data.user.email === "admin@mail.com") {
+                navigate("/admin/dashboard");
+            } else {
+                navigate("/user/dashboard");
+            }
         } catch (err) {
-            console.error(err);
+            console.error("Login gagal:", err);
             toast.error(
                 err.response?.data?.message || "Email atau password salah!"
             );
@@ -70,7 +80,7 @@ export default function LoginPage() {
 
     // ---- Google OAuth ----
     const handleGoogleLogin = () => {
-        window.location.href = `${API_BASE_URL}/auth/google`; // ✅ gunakan base URL
+        window.location.href = `${API_BASE_URL}/auth/google`;
     };
 
     return (
@@ -132,10 +142,7 @@ export default function LoginPage() {
                 {/* Link register */}
                 <p className="text-center text-sm text-gray-600 mt-4">
                     Belum punya akun?{" "}
-                    <Link
-                        to="/register"
-                        className="text-blue-600 font-semibold"
-                    >
+                    <Link to="/register" className="text-blue-600 font-semibold">
                         Daftar di sini
                     </Link>
                 </p>
