@@ -9,7 +9,7 @@ export default function SidebarUser({ darkMode }) {
       </div>
       <nav className="flex-1 px-4 space-y-2">
         <Link
-          to="/dashboard"
+          to="/user/dashboard"
           className="block px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 transition"
         >
           Home
