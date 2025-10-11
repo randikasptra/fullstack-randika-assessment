@@ -39,37 +39,7 @@ export default function DashboardUser() {
             });
     }, [navigate]);
 
-    const handleLogout = async () => {
-        const token = localStorage.getItem("auth_token");
 
-        if (!token) {
-            toast.warn("Kamu belum login!");
-            navigate("/");
-            return;
-        }
-
-        try {
-            await axios.post(
-                "http://127.0.0.1:8000/api/logout",
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: "application/json",
-                    },
-                }
-            );
-
-            localStorage.removeItem("auth_token");
-            localStorage.removeItem("user");
-
-            toast.success("Logout berhasil 👋");
-            navigate("/");
-        } catch (error) {
-            console.error("Logout gagal:", error);
-            toast.error("Gagal logout. Silakan coba lagi.");
-        }
-    };
 
     return (
         <div className={`${darkMode ? "dark" : ""} flex min-h-screen`}>
@@ -89,12 +59,7 @@ export default function DashboardUser() {
                         >
                             Toggle Dark
                         </button>
-                        <button
-                            onClick={handleLogout}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded shadow transition"
-                        >
-                            Logout
-                        </button>
+
                     </div>
                 </div>
 
