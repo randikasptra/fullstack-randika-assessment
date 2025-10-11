@@ -37,7 +37,7 @@ export default function GoogleSuccess() {
                         `Login berhasil! Selamat datang, ${userData.name}. 🎉`
                     );
 
-                    if (userData.email === "admin@mail.com") {
+                    if (userData.role === "admin") {
                         navigate("/admin/dashboard");
                     } else {
                         navigate("/user/dashboard");

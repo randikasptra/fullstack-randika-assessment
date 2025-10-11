@@ -20,6 +20,7 @@ class User extends Authenticatable
         'role', // kalau kamu tambahkan
     ];
 
+
     protected $hidden = [
         'password',
         'remember_token',

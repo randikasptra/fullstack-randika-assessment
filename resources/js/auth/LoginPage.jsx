@@ -21,32 +21,33 @@ export default function LoginPage() {
     useEffect(() => {
         const params = new URLSearchParams(location.search);
         const token = params.get("token");
-
         if (!token) return;
 
         localStorage.setItem("auth_token", token);
 
-        axios
-            .get(`${API_BASE_URL}/api/user`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .then((res) => {
-                const user = res.data;
-                saveAuthData(token, user);
+        axios.get(`${API_BASE_URL}/api/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+            const user = res.data;
+            saveAuthData(token, user);
 
-                toast.success("Login berhasil via Google 🎉");
+            toast.success(`Login berhasil! Selamat datang, ${user.name} 🎉`);
 
-                if (user.email === "admin@mail.com") {
-                    navigate("/admin/dashboard");
-                } else {
-                    navigate("/user/dashboard");
-                }
-            })
-            .catch((err) => {
-                console.error("Error saat ambil data user:", err);
-                toast.error("Gagal mendapatkan data user!");
-                localStorage.removeItem("auth_token");
-            });
+            // 🔹 Redirect sesuai role
+            if (user.role === "admin") {
+                navigate("/admin/dashboard");
+            } else {
+                navigate("/user/dashboard");
+            }
+        })
+        .catch((err) => {
+            console.error("Error saat ambil data user:", err);
+            toast.error("Gagal mendapatkan data user!");
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("user");
+            navigate("/");
+        });
     }, [location.search, navigate]);
 
     // ---- Login manual ----
@@ -61,9 +62,10 @@ export default function LoginPage() {
             });
 
             saveAuthData(data.token, data.user);
-            toast.success("Login berhasil 🎉");
+            toast.success(`Login berhasil! Selamat datang, ${data.user.name} 🎉`);
 
-            if (data.user.email === "admin@mail.com") {
+            // 🔹 Redirect sesuai role
+            if (data.user.role === "admin") {
                 navigate("/admin/dashboard");
             } else {
                 navigate("/user/dashboard");
@@ -80,7 +82,7 @@ export default function LoginPage() {
 
     // ---- Google OAuth ----
     const handleGoogleLogin = () => {
-        window.location.href = `${API_BASE_URL}/auth/google`;
+        window.location.href = `${API_BASE_URL}/auth/google/redirect`;
     };
 
     return (
@@ -90,7 +92,6 @@ export default function LoginPage() {
                     Login ke Sistem
                 </h2>
 
-                {/* Form login manual */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="email"
@@ -119,14 +120,12 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                {/* Separator */}
                 <div className="flex items-center justify-between my-4">
                     <hr className="w-1/3 border-gray-300" />
                     <span className="text-gray-500 text-sm">atau</span>
                     <hr className="w-1/3 border-gray-300" />
                 </div>
 
-                {/* Tombol Google */}
                 <button
                     onClick={handleGoogleLogin}
                     className="w-full border border-gray-300 py-2 rounded-lg hover:bg-gray-100 flex items-center justify-center gap-2 transition"
@@ -139,7 +138,6 @@ export default function LoginPage() {
                     <span>Masuk dengan Google</span>
                 </button>
 
-                {/* Link register */}
                 <p className="text-center text-sm text-gray-600 mt-4">
                     Belum punya akun?{" "}
                     <Link to="/register" className="text-blue-600 font-semibold">

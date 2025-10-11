@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
+use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
 {
@@ -82,18 +83,34 @@ class AuthController extends Controller
     {
         $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::updateOrCreate(
-            ['email' => $googleUser->getEmail()],
-            [
-                'name'     => $googleUser->getName(),
+        // Cek apakah user sudah ada
+        $user = User::where('email', $googleUser->getEmail())->first();
+
+        if ($user) {
+            // User sudah ada, ambil role yang ada
+            $role = $user->role;
+            // Update nama dan password baru tapi jangan ubah role
+            $user->update([
+                'name' => $googleUser->getName(),
                 'password' => Hash::make(Str::random(24)),
-            ]
-        );
+            ]);
+        } else {
+            // User baru, default role = 'user'
+            $user = User::create([
+                'name' => $googleUser->getName(),
+                'email' => $googleUser->getEmail(),
+                'password' => Hash::make(Str::random(24)),
+                'role' => 'user',
+            ]);
+            $role = 'user';
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        return redirect("http://127.0.0.1:8000/google-success?token={$token}");
+        // Redirect ke front-end dengan token dan role
+        return redirect("http://127.0.0.1:8000/google-success?token={$token}&role={$role}");
     }
+
 
     /**
      * LOGOUT
