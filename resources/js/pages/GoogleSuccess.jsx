@@ -8,32 +8,35 @@ export default function GoogleSuccess() {
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get("token");
+        let token = urlParams.get("token");
+
+        if (!token) {
+            token = localStorage.getItem("auth_token");
+        }
+
+        console.log("🔑 Token dari URL/localStorage:", token);
 
         if (token) {
-            // Bersihkan URL dari token SEBELUM panggil API, tapi setelah token disimpan
-            // Ini bisa menjadi sumber error jika tidak dikontrol dengan baik.
             if (window.history.replaceState) {
                 window.history.replaceState(null, "", window.location.pathname);
             }
 
             localStorage.setItem("auth_token", token);
+            console.log("✅ Token disimpan ke localStorage:", token);
 
-            // Pastikan URL API BENAR
             axios
                 .get("http://127.0.0.1:8000/api/user", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: { Authorization: `Bearer ${token}` },
                 })
                 .then((res) => {
+                    // console.log("👤 Data user dari API:", res.data);
                     const userData = res.data;
+
                     localStorage.setItem("user", JSON.stringify(userData));
                     toast.success(
                         `Login berhasil! Selamat datang, ${userData.name}. 🎉`
                     );
 
-                    // Logika Redirect
                     if (userData.email === "admin@mail.com") {
                         navigate("/admin/dashboard");
                     } else {
@@ -41,19 +44,18 @@ export default function GoogleSuccess() {
                     }
                 })
                 .catch((error) => {
-                    console.error(
-                        "Gagal verifikasi data user (API Error):",
-                        error
-                    );
+                    console.error("❌ Gagal verifikasi data user:", error);
                     toast.error(
                         "Gagal mendapatkan data user. Silakan coba login lagi."
                     );
-
                     localStorage.removeItem("auth_token");
                     localStorage.removeItem("user");
                     navigate("/");
                 });
         } else {
+            console.warn(
+                "⚠️ Token otentikasi tidak ditemukan di URL maupun localStorage."
+            );
             toast.error("Token otentikasi tidak ditemukan.");
             navigate("/");
         }
