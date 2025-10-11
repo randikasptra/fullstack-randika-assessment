@@ -82,19 +82,17 @@ class AuthController extends Controller
     {
         $googleUser = Socialite::driver('google')->stateless()->user();
 
-        // Cek apakah user sudah ada berdasarkan email, kalau belum, buat baru
         $user = User::updateOrCreate(
             ['email' => $googleUser->getEmail()],
             [
                 'name'     => $googleUser->getName(),
-                'password' => Hash::make(Str::random(24)), // random password
+                'password' => Hash::make(Str::random(24)),
             ]
         );
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Redirect ke frontend (ganti URL sesuai proyekmu)
-        return redirect("http://localhost:5173/google-success?token={$token}");
+        return redirect("http://127.0.0.1:8000/google-success?token={$token}");
     }
 
     /**
@@ -102,11 +100,19 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        if (!$request->user()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'User not authenticated'
+            ], 401);
+        }
+
         $request->user()->tokens()->delete();
 
         return response()->json([
             'status'  => true,
-            'message' => 'Logged out successfully',
+            'message' => 'Logged out successfully'
         ]);
     }
+
 }

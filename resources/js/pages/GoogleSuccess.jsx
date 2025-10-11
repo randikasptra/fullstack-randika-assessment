@@ -1,9 +1,7 @@
-// resources/js/pages/GoogleSuccess.jsx
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { API_BASE_URL } from "../config/api"; // ✅ Import base URL
 
 export default function GoogleSuccess() {
     const navigate = useNavigate();
@@ -12,14 +10,18 @@ export default function GoogleSuccess() {
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get("token");
 
-        // Bersihkan URL dari token
-        window.history.replaceState(null, "", window.location.pathname);
-
         if (token) {
+            // Bersihkan URL dari token SEBELUM panggil API, tapi setelah token disimpan
+            // Ini bisa menjadi sumber error jika tidak dikontrol dengan baik.
+            if (window.history.replaceState) {
+                window.history.replaceState(null, "", window.location.pathname);
+            }
+
             localStorage.setItem("auth_token", token);
 
+            // Pastikan URL API BENAR
             axios
-                .get(`${API_BASE_URL}/api/user`, { // ✅ Gunakan base URL
+                .get("http://127.0.0.1:8000/api/user", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -27,8 +29,11 @@ export default function GoogleSuccess() {
                 .then((res) => {
                     const userData = res.data;
                     localStorage.setItem("user", JSON.stringify(userData));
-                    toast.success(`Login berhasil! Selamat datang, ${userData.name}. 🎉`);
+                    toast.success(
+                        `Login berhasil! Selamat datang, ${userData.name}. 🎉`
+                    );
 
+                    // Logika Redirect
                     if (userData.email === "admin@mail.com") {
                         navigate("/admin/dashboard");
                     } else {
@@ -36,8 +41,13 @@ export default function GoogleSuccess() {
                     }
                 })
                 .catch((error) => {
-                    console.error("Gagal verifikasi data user (API Error):", error);
-                    toast.error("Gagal mendapatkan data user. Silakan coba login lagi.");
+                    console.error(
+                        "Gagal verifikasi data user (API Error):",
+                        error
+                    );
+                    toast.error(
+                        "Gagal mendapatkan data user. Silakan coba login lagi."
+                    );
 
                     localStorage.removeItem("auth_token");
                     localStorage.removeItem("user");
