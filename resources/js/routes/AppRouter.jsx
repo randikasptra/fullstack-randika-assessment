@@ -6,6 +6,7 @@ import LoginPage from "../auth/LoginPage";
 import RegisterPage from "../auth/RegisterPage";
 import DashboardAdmin from "../pages/admin/DashboardAdmin";
 import DashboardUser from "../pages/user/DashboardUser";
+import GoogleSucces from "../pages/GoogleSucces";
 
 const AppRouter = () => {
   return (
@@ -15,6 +16,7 @@ const AppRouter = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/admin/dashboard" element={<DashboardAdmin />} />
         <Route path="/user/dashboard" element={<DashboardUser />} />
+        <Route path="/google-success" element={<GoogleSucces />} />
       </Routes>
     </BrowserRouter>
   );
