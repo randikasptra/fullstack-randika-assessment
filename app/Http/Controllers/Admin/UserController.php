@@ -23,7 +23,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => ['required', Rule::in(['admin','user'])],
+            'role' => ['required', Rule::in(['admin', 'librarian', 'member'])],
             'password' => 'required|string|min:6|confirmed',
         ]);
 
@@ -52,7 +52,7 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // 🚫 Cegah admin ubah admin lain
+        // 🚫 Cegah admin ubah admin lain (kecuali diri sendiri)
         if ($user->role === 'admin' && auth()->user()->id !== $user->id) {
             return response()->json([
                 'message' => 'Maaf, Anda tidak bisa mengubah data admin lain!',
@@ -61,8 +61,8 @@ class UserController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => ['required','email', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', Rule::in(['admin','user'])],
+            'email' => ['required', 'email', Rule::unique('users')->ignore($user->id)],
+            'role' => ['required', Rule::in(['admin', 'librarian', 'member'])],
             'password' => 'nullable|string|min:6|confirmed',
         ]);
 
@@ -87,10 +87,17 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // 🚫 Cegah admin hapus admin lain
-        if ($user->role === 'admin' && auth()->user()->id !== $user->id) {
+        // 🚫 Cegah admin hapus diri sendiri
+        if (auth()->user()->id === $user->id) {
             return response()->json([
-                'message' => 'Maaf, Anda tidak bisa menghapus admin lain!',
+                'message' => 'Anda tidak bisa menghapus akun sendiri!',
+            ], 403);
+        }
+
+        // 🚫 Cegah admin hapus admin lain
+        if ($user->role === 'admin' && auth()->user()->role !== 'admin') {
+            return response()->json([
+                'message' => 'Maaf, Anda tidak bisa menghapus admin!',
             ], 403);
         }
 
