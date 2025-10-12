@@ -6,26 +6,11 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
-use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Cloudinary\Cloudinary;
 
-// 🧪 Debug Config Cloudinary
-
-Route::get('/debug-cloudinary', function () {
-    return response()->json([
-        'source' => app()->configurationIsCached() ? 'CONFIG CACHE ACTIVE' : 'NO CACHE',
-        'config' => [
-            'cloud_name' => config('cloudinary.cloud.cloud_name'),
-            'api_key'    => config('cloudinary.cloud.api_key'),
-            'api_secret' => config('cloudinary.cloud.api_secret') ? 'SET' : 'MISSING',
-        ],
-    ], 200, [], JSON_PRETTY_PRINT);
-});
-
-
-// 🧪 Test Upload Cloudinary
+// 🧪 Test Upload dengan SDK Langsung
 Route::post('/test-upload', function (Request $request) {
     try {
-        // Validasi file
         if (!$request->hasFile('image')) {
             return response()->json([
                 'status' => 'error',
@@ -35,24 +20,25 @@ Route::post('/test-upload', function (Request $request) {
 
         $file = $request->file('image');
 
-        // Validasi tipe file
-        if (!in_array($file->extension(), ['jpg', 'jpeg', 'png', 'webp'])) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid file type. Only JPG, PNG, WEBP allowed.'
-            ], 400);
-        }
+        // Inisialisasi Cloudinary SDK langsung
+        $cloudinary = new Cloudinary([
+            'cloud' => [
+                'cloud_name' => env('CLOUDINARY_CLOUD_NAME', 'diwbgp4bu'),
+                'api_key'    => env('CLOUDINARY_API_KEY', '171689433731249'),
+                'api_secret' => env('CLOUDINARY_API_SECRET', 'WmkaC6hMu6KjJQdNoJ_IRKQp_14'),
+            ]
+        ]);
 
-        // Upload ke Cloudinary
-        $upload = Cloudinary::upload($file->getRealPath(), [
+        // Upload file
+        $result = $cloudinary->uploadApi()->upload($file->getRealPath(), [
             'folder' => 'books_test',
             'resource_type' => 'image',
         ]);
 
         return response()->json([
             'status' => 'success',
-            'secure_url' => $upload->getSecurePath(),
-            'public_id' => $upload->getPublicId(),
+            'secure_url' => $result['secure_url'],
+            'public_id' => $result['public_id'],
             'message' => '✅ Upload berhasil!'
         ]);
 
@@ -61,15 +47,19 @@ Route::post('/test-upload', function (Request $request) {
             'status' => 'error',
             'message' => 'Upload failed',
             'error' => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => basename($e->getFile()),
+            'trace' => $e->getTraceAsString(),
         ], 500);
     }
 });
 
-
-
-
+// 🧪 Debug Environment
+Route::get('/debug-env', function () {
+    return response()->json([
+        'CLOUDINARY_CLOUD_NAME' => env('CLOUDINARY_CLOUD_NAME'),
+        'CLOUDINARY_API_KEY' => env('CLOUDINARY_API_KEY'),
+        'CLOUDINARY_API_SECRET' => env('CLOUDINARY_API_SECRET') ? 'SET' : 'NOT SET',
+    ]);
+});
 
 // Auth Routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -77,7 +67,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
-// Protected Routes (butuh authentication)
+// Protected Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
