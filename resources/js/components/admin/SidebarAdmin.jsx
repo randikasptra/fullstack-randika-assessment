@@ -32,12 +32,12 @@ const SidebarAdmin = () => {
             path: "/admin/category-manager",
             name: "Manajemen Category",
             icon: <FaTags />,
-        }, // 🏷️ diganti dari FaBook ke FaTags
+        },
         {
-            path: "/admin/book-manager",
+            path: "/admin/books-manager",
             name: "Manajemen Buku",
             icon: <FaBook />,
-        }, // 📚 tambahan baru
+        },
         {
             path: "/admin/sales",
             name: "Manajemen Penjualan",
