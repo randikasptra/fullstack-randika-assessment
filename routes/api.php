@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookController;
+use App\Http\Controllers\Admin\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
@@ -81,6 +82,11 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 });
 
+Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
+    return $request->user();
+});
+
+
 // ============================================
 // 👑 ADMIN & LIBRARIAN ROUTES
 // ============================================
@@ -99,6 +105,16 @@ Route::middleware(['auth:sanctum', 'role:admin,librarian'])->group(function () {
     Route::post('/books/{id}', [BookController::class, 'update']);
     Route::delete('/books/{id}', [BookController::class, 'destroy']);
 });
+
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/settings/profile', [SettingsController::class, 'profile']);
+    Route::put('/settings/update-name', [SettingsController::class, 'updateName']);
+    Route::put('/settings/update-password', [SettingsController::class, 'updatePassword']);
+});
+
+
+
 
 // ============================================
 // 👑 ADMIN ONLY ROUTES

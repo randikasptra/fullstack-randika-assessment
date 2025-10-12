@@ -125,7 +125,7 @@ const SidebarAdmin = () => {
 
         // ============ SETTINGS ============
         {
-            path: "/admin/settings",
+            path: "/admin/settings-admin",
             name: "Pengaturan",
             icon: <FaCog />,
         },
