@@ -109,6 +109,7 @@ class AuthController extends Controller
 
         // Redirect ke front-end dengan token dan role
         return redirect("http://127.0.0.1:8000/google-success?token={$token}&role={$role}");
+
     }
 
 
