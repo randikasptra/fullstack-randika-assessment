@@ -11,7 +11,7 @@ const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalType, setModalType] = useState('add'); // 'add' or 'edit'
+    const [modalType, setModalType] = useState('add');
     const [editCategory, setEditCategory] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -37,7 +37,8 @@ const CategoryManager = () => {
             setCategories(res.data);
         } catch (error) {
             console.error(error);
-            toast.error("Gagal memuat kategori.");
+            const errorMsg = error.response?.data?.message || "Gagal memuat kategori.";
+            toast.error(errorMsg);
         }
     };
 
@@ -63,15 +64,35 @@ const CategoryManager = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!confirm("Yakin ingin menghapus kategori ini?")) return;
+        // Cari kategori untuk info konfirmasi
+        const category = categories.find(cat => cat.id === id);
+        const bookCount = category?.books_count || 0;
+
+        let confirmMessage = "Yakin ingin menghapus kategori ini?";
+        if (bookCount > 0) {
+            confirmMessage = `⚠️ Kategori ini memiliki ${bookCount} buku. Yakin ingin menghapus?`;
+        }
+
+        if (!confirm(confirmMessage)) return;
+
         try {
             await axios.delete(`http://127.0.0.1:8000/api/categories/${id}`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            toast.success("Kategori dihapus!");
+            toast.success("🗑️ Kategori berhasil dihapus!");
             fetchCategories();
         } catch (error) {
-            toast.error("Gagal menghapus kategori.");
+            console.error(error);
+            const errorMsg = error.response?.data?.message || "Gagal menghapus kategori.";
+
+            // Tampilkan error yang lebih spesifik
+            if (error.response?.status === 422) {
+                toast.error("❌ " + errorMsg);
+            } else if (error.response?.status === 403) {
+                toast.error("🔒 Anda tidak memiliki akses untuk menghapus kategori.");
+            } else {
+                toast.error("❌ " + errorMsg);
+            }
         }
     };
 
@@ -83,20 +104,28 @@ const CategoryManager = () => {
                     formData,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                toast.success("Kategori berhasil diperbarui!");
+                toast.success("✅ Kategori berhasil diperbarui!");
             } else {
                 await axios.post(
                     "http://127.0.0.1:8000/api/categories",
                     formData,
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
-                toast.success("Kategori berhasil ditambahkan!");
+                toast.success("✅ Kategori berhasil ditambahkan!");
             }
             handleCloseModal();
             fetchCategories();
         } catch (error) {
             console.error(error);
-            toast.error("Gagal menyimpan kategori.");
+            const errorMsg = error.response?.data?.message || "Gagal menyimpan kategori.";
+
+            // Handle validation errors
+            if (error.response?.data?.errors) {
+                const errors = Object.values(error.response.data.errors).flat();
+                errors.forEach(err => toast.error(err));
+            } else {
+                toast.error("❌ " + errorMsg);
+            }
         }
     };
 
@@ -112,7 +141,7 @@ const CategoryManager = () => {
                     onClick={handleOpenAddModal}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition"
                 >
-                    Tambah Kategori
+                    ➕ Tambah Kategori
                 </button>
             </div>
 
