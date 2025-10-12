@@ -12,7 +12,7 @@ const BooksManager = () => {
     const [filteredBooks, setFilteredBooks] = useState([]);
     const [categories, setCategories] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalType, setModalType] = useState('add'); // 'add' or 'edit'
+    const [modalType, setModalType] = useState('add');
     const [editBook, setEditBook] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -92,17 +92,28 @@ const BooksManager = () => {
     const handleSaveBook = async (formData) => {
         try {
             if (modalType === 'edit' && editBook) {
-                await axios.put(
+                // Gunakan POST karena Laravel tidak support PUT dengan file upload
+                await axios.post(
                     `http://127.0.0.1:8000/api/books/${editBook.id}`,
                     formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
                 );
                 toast.success("Buku berhasil diperbarui!");
             } else {
                 await axios.post(
                     "http://127.0.0.1:8000/api/books",
                     formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
                 );
                 toast.success("Buku berhasil ditambahkan!");
             }
@@ -110,28 +121,10 @@ const BooksManager = () => {
             fetchBooks();
         } catch (error) {
             console.error(error);
-            toast.error("Gagal menyimpan buku.");
+            const errorMsg = error.response?.data?.message || "Gagal menyimpan buku.";
+            toast.error(errorMsg);
         }
     };
-
-    // misal di BooksManager.jsx atau file test
-const handleTestUpload = async (file) => {
-  const formData = new FormData();
-  formData.append("image", file);
-
-  try {
-    const res = await axios.post("http://127.0.0.1:8000/api/test-upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    console.log("Upload success:", res.data);
-  } catch (err) {
-    console.error("Upload error:", err.response?.data || err);
-  }
-};
-
 
     return (
         <AdminLayout>

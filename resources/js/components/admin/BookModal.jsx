@@ -13,6 +13,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
         description: "",
         image: null
     });
+    const [previewImage, setPreviewImage] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -28,6 +29,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                     description: initialData.description || "",
                     image: null
                 });
+                setPreviewImage(initialData.image_url || null);
             } else {
                 setForm({
                     title: "",
@@ -40,6 +42,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                     description: "",
                     image: null
                 });
+                setPreviewImage(null);
             }
         }
     }, [isOpen, type, initialData]);
@@ -50,23 +53,36 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
     };
 
     const handleFileChange = (e) => {
-        setForm({ ...form, image: e.target.files[0] });
+        const file = e.target.files[0];
+        if (file) {
+            setForm({ ...form, image: file });
+
+            // Preview gambar
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPreviewImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+
         const submitData = new FormData();
         submitData.append('title', form.title);
-        submitData.append('author', form.author);
-        submitData.append('publisher', form.publisher);
-        submitData.append('year', form.year);
-        submitData.append('price', form.price);
-        submitData.append('stock', form.stock);
-        submitData.append('category_id', form.category_id);
-        submitData.append('description', form.description);
+        submitData.append('author', form.author || '');
+        submitData.append('publisher', form.publisher || '');
+        submitData.append('year', form.year || '');
+        submitData.append('price', form.price || '0');
+        submitData.append('stock', form.stock || '0');
+        submitData.append('category_id', form.category_id || '');
+        submitData.append('description', form.description || '');
+
         if (form.image) {
             submitData.append('image', form.image);
         }
+
         onSave(submitData);
     };
 
@@ -75,7 +91,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <h2 className="text-xl font-bold mb-4">
+                <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">
                     {type === 'edit' ? 'Edit Buku' : 'Tambah Buku'}
                 </h2>
                 <form onSubmit={handleSubmit}>
@@ -83,10 +99,10 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                         <input
                             type="text"
                             name="title"
-                            placeholder="Judul"
+                            placeholder="Judul *"
                             value={form.title}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                             required
                         />
                         <input
@@ -95,7 +111,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             placeholder="Penulis"
                             value={form.author}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                         />
                         <input
                             type="text"
@@ -103,7 +119,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             placeholder="Penerbit"
                             value={form.publisher}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                         />
                         <input
                             type="number"
@@ -111,9 +127,9 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             placeholder="Tahun"
                             value={form.year}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
-                            min="0"
-                            max="9999"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
+                            min="1900"
+                            max="2100"
                         />
                         <input
                             type="number"
@@ -121,7 +137,7 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             placeholder="Harga"
                             value={form.price}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                             min="0"
                             step="0.01"
                         />
@@ -131,14 +147,14 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             placeholder="Stok"
                             value={form.stock}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                             min="0"
                         />
                         <select
                             name="category_id"
                             value={form.category_id}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                         >
                             <option value="">Pilih Kategori</option>
                             {categories.map((cat) => (
@@ -152,26 +168,32 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             placeholder="Deskripsi"
                             value={form.description}
                             onChange={handleInputChange}
-                            className="w-full border rounded-lg px-3 py-2"
+                            className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
                             rows={3}
                         />
-                        <input
-                            type="file"
-                            name="image"
-                            accept="image/*"
-                            // onChange={handleFileChange}
-                            onChange={(e) => handleTestUpload(e.target.files[0])}
-                            className="w-full border rounded-lg px-3 py-2"
-                        />
-                        {type === 'edit' && initialData && initialData.image_url && !form.image && (
-                            <div className="mt-2">
-                                <img
-                                    src={initialData.image_url}
-                                    alt="Current book cover"
-                                    className="w-20 h-28 object-cover rounded"
-                                />
-                            </div>
-                        )}
+
+                        <div>
+                            <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                Gambar Cover
+                            </label>
+                            <input
+                                type="file"
+                                name="image"
+                                accept="image/jpeg,image/png,image/jpg,image/webp"
+                                onChange={handleFileChange}
+                                className="w-full border rounded-lg px-3 py-2 dark:bg-gray-700 dark:text-white"
+                            />
+                            {previewImage && (
+                                <div className="mt-3">
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Preview:</p>
+                                    <img
+                                        src={previewImage}
+                                        alt="Preview"
+                                        className="w-32 h-40 object-cover rounded border"
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                     <div className="flex justify-end gap-2">
                         <button
