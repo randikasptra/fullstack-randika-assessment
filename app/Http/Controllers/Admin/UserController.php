@@ -52,6 +52,13 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // 🚫 Cegah admin ubah admin lain
+        if ($user->role === 'admin' && auth()->user()->id !== $user->id) {
+            return response()->json([
+                'message' => 'Maaf, Anda tidak bisa mengubah data admin lain!',
+            ], 403);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => ['required','email', Rule::unique('users')->ignore($user->id)],
@@ -79,6 +86,14 @@ class UserController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+
+        // 🚫 Cegah admin hapus admin lain
+        if ($user->role === 'admin' && auth()->user()->id !== $user->id) {
+            return response()->json([
+                'message' => 'Maaf, Anda tidak bisa menghapus admin lain!',
+            ], 403);
+        }
+
         $user->delete();
 
         return response()->json(['message' => 'User berhasil dihapus!']);
