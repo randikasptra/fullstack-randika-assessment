@@ -37,7 +37,8 @@ export default function RegisterPage() {
     // --- 2. REGISTRASI/LOGIN VIA GOOGLE ---
     const handleGoogleLogin = () => {
         // Mengarahkan ke API redirect Laravel (alur Google)
-        window.location.href = "http://127.0.0.1:8000/api/auth/google/redirect";
+        // window.location.href = "http://127.0.0.1:8000/api/auth/google/redirect";
+         window.location.href = `${API_BASE_URL}/api/auth/google/redirect`;
     };
 
     return (
