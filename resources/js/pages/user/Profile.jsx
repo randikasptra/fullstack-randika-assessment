@@ -12,9 +12,8 @@ export default function Profile() {
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [passwordData, setPasswordData] = useState({
-        current_password: "",
         new_password: "",
-        confirm_password: "",
+        new_password_confirmation: "", // Ubah dari confirm_password ke new_password_confirmation
     });
     const [passwordErrors, setPasswordErrors] = useState({}); // State buat error real-time
 
@@ -43,7 +42,7 @@ export default function Profile() {
     const handleEditToggle = () => {
         setEditing(!editing);
         if (editing) {
-            setPasswordData({ current_password: "", new_password: "", confirm_password: "" });
+            setPasswordData({ new_password: "", new_password_confirmation: "" }); // Update reset
             setPasswordErrors({});
         }
     };
@@ -86,8 +85,8 @@ export default function Profile() {
             }
         }
 
-        if (data.confirm_password && data.confirm_password !== newPass) {
-            errors.confirm_password = "Konfirmasi tidak cocok";
+        if (data.new_password_confirmation && data.new_password_confirmation !== newPass) { // Update referensi
+            errors.new_password_confirmation = "Konfirmasi tidak cocok";
         }
 
         return errors;
@@ -125,7 +124,7 @@ export default function Profile() {
             const response = await profileService.changePassword(passwordData);
             if (response.success) {
                 toast.success(response.message);
-                setPasswordData({ current_password: "", new_password: "", confirm_password: "" });
+                setPasswordData({ new_password: "", new_password_confirmation: "" }); // Update reset
                 setPasswordErrors({});
             } else {
                 toast.error(response.message || "Gagal ubah password");
@@ -135,9 +134,9 @@ export default function Profile() {
             if (error.errors) {
                 const newErrors = {};
                 if (error.errors.new_password) newErrors.new_password = error.errors.new_password[0];
-                if (error.errors.confirm_password) newErrors.confirm_password = error.errors.confirm_password[0];
+                if (error.errors.new_password_confirmation) newErrors.new_password_confirmation = error.errors.new_password_confirmation[0]; // Update handle error
                 setPasswordErrors(newErrors);
-                toast.error(error.errors.new_password?.[0] || "Gagal ubah password");
+                toast.error(error.errors.new_password?.[0] || error.errors.new_password_confirmation?.[0] || "Gagal ubah password");
             } else {
                 toast.error(error.message || "Gagal ubah password");
             }
@@ -218,43 +217,6 @@ export default function Profile() {
                             />
                         </div>
 
-                        {/* Kalo kolom phone/address ada di DB, uncomment ini */}
-                        {/*
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                <Phone className="w-4 h-4 inline mr-2" />
-                                Nomor Telepon
-                            </label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={profile.phone || ""}
-                                onChange={handleProfileChange}
-                                disabled={!editing}
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    editing ? "border-gray-300 dark:border-gray-600" : "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                                }`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                <MapPin className="w-4 h-4 inline mr-2" />
-                                Alamat
-                            </label>
-                            <textarea
-                                name="address"
-                                value={profile.address || ""}
-                                onChange={handleProfileChange}
-                                disabled={!editing}
-                                rows="3"
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    editing ? "border-gray-300 dark:border-gray-600" : "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                                }`}
-                            />
-                        </div>
-                        */}
-
                         {editing && (
                             <button
                                 type="submit"
@@ -276,21 +238,6 @@ export default function Profile() {
                     </h2>
 
                     <form onSubmit={handleChangePassword} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Password Saat Ini
-                            </label>
-                            <input
-                                type="password"
-                                name="current_password"
-                                value={passwordData.current_password}
-                                onChange={handlePasswordChange}
-                                required
-                                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                placeholder="Masukkan password saat ini"
-                            />
-                        </div>
-
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Password Baru
@@ -318,23 +265,23 @@ export default function Profile() {
                             </label>
                             <input
                                 type="password"
-                                name="confirm_password"
-                                value={passwordData.confirm_password}
+                                name="new_password_confirmation" // Ubah nama input ke new_password_confirmation
+                                value={passwordData.new_password_confirmation}
                                 onChange={handlePasswordChange}
                                 required
                                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    passwordErrors.confirm_password ? "border-red-500" : "border-gray-300 dark:border-gray-600"
+                                    passwordErrors.new_password_confirmation ? "border-red-500" : "border-gray-300 dark:border-gray-600" // Update error key
                                 }`}
                                 placeholder="Konfirmasi password baru"
                             />
-                            {passwordErrors.confirm_password && (
-                                <p className="text-red-500 text-xs mt-1">{passwordErrors.confirm_password}</p>
+                            {passwordErrors.new_password_confirmation && ( // Update error display
+                                <p className="text-red-500 text-xs mt-1">{passwordErrors.new_password_confirmation}</p>
                             )}
                         </div>
 
                         <button
                             type="submit"
-                            disabled={Object.keys(passwordErrors).length > 0 || !passwordData.new_password || saving}
+                            disabled={Object.keys(passwordErrors).length > 0 || !passwordData.new_password || saving} // Update kondisi (gak ada confirm_password lagi)
                             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-lg transition font-semibold"
                         >
                             Ubah Password

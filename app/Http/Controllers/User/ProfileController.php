@@ -74,20 +74,13 @@ class ProfileController extends Controller
     public function changePassword(Request $request)
     {
         $request->validate([
-            'current_password' => 'required',
             'new_password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()],
         ]);
 
         try {
             $user = auth()->user();
 
-            if (!Hash::check($request->current_password, $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Password saat ini salah',
-                ], 422);
-            }
-
+            // Langsung update tanpa check password lama
             $user->update([
                 'password' => Hash::make($request->new_password),
             ]);
