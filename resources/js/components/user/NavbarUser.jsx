@@ -7,7 +7,6 @@ export default function NavbarUser({ darkMode, user }) {
     const navigate = useNavigate();
     const location = useLocation();
 
-
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
 
@@ -57,10 +56,10 @@ export default function NavbarUser({ darkMode, user }) {
                         <div className="hidden md:block ml-10">
                             <div className="flex space-x-8">
                                 {[
-                                    { path: "/user/book-list", label: "Belanja Buku" },
-                                    { path: "/user/dashboard", label: "Dashboard" },
+                                    { path: "/user/book-list", label: "Katalog Buku" },
+                                    { path: "/user/cart", label: "Keranjang" },
                                     { path: "/user/orders", label: "Pesanan Saya" },
-                                    { path: "/user/library", label: "Koleksi" },
+                                    { path: "/user/dashboard", label: "Dashboard" },
                                     { path: "/user/profile", label: "Profil" },
                                 ].map(({ path, label }) => (
                                     <Link
@@ -142,11 +141,10 @@ export default function NavbarUser({ darkMode, user }) {
             >
                 <div className="px-2 pt-2 pb-3 space-y-1">
                     {[
-                        { path: "/user/book-list", label: "Belanja Buku" },
-                        { path: "/user/dashboard", label: "Dashboard" },
+                        { path: "/user/book-list", label: "Katalog Buku" },
+                        { path: "/user/cart", label: "Keranjang" },
                         { path: "/user/orders", label: "Pesanan Saya" },
-                        { path: "/user/wishlist", label: "Wishlist" },
-                        { path: "/user/library", label: "Koleksi" },
+                        { path: "/user/dashboard", label: "Dashboard" },
                         { path: "/user/profile", label: "Profil" },
                     ].map(({ path, label }) => (
                         <Link
