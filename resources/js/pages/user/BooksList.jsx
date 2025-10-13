@@ -1,244 +1,219 @@
-// resources/js/pages/user/BooksList.jsx
 import React, { useState, useEffect } from "react";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import NavbarUser from "../../components/user/NavbarUser";
-import * as bookService from "../../services/user/bookService";
+import bookService from "../../services/user/bookService";
+import cartService from "../../services/user/cartService";
+import { Search, ShoppingCart, BookOpen } from "lucide-react";
+import UserLayout from "../../layouts/UserLayout";
 
-const BooksList = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [user, setUser] = useState(null);
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredBooks, setFilteredBooks] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [categories, setCategories] = useState([]);
 
-  const token = localStorage.getItem("auth_token");
-  const navigate = useNavigate();
+export default function BooksList() {
+    const [books, setBooks] = useState([]);
+    const [filteredBooks, setFilteredBooks] = useState([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-  // 🔹 Toggle dark mode event listener
-  useEffect(() => {
-    const handleToggleDarkMode = () => setDarkMode(!darkMode);
-    window.addEventListener("toggleDarkMode", handleToggleDarkMode);
-    return () => window.removeEventListener("toggleDarkMode", handleToggleDarkMode);
-  }, [darkMode]);
+    useEffect(() => {
+        loadBooks();
+    }, []);
 
-  // 🔹 Load user data
-  useEffect(() => {
-    if (!token) {
-      toast.warn("Kamu belum login!");
-      navigate("/");
-      return;
-    }
-
-    const loadUser = async () => {
-      const result = await bookService.fetchUser();
-      if (result.success) {
-        setUser(result.data);
-      } else {
-        if (result.unauthorized) {
-          toast.error("Sesi login berakhir. Silakan login ulang.");
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("user");
-          navigate("/");
-        } else {
-          console.error("❌ Gagal memuat user:", result.error);
+    const loadBooks = async () => {
+        try {
+            setLoading(true);
+            const booksData = await bookService.getAllBooks();
+            setBooks(Array.isArray(booksData) ? booksData : []);
+            setFilteredBooks(Array.isArray(booksData) ? booksData : []);
+        } catch (error) {
+            console.error("Error loading books:", error);
+            alert(error.message || "Gagal memuat buku");
+        } finally {
+            setLoading(false);
         }
-      }
     };
 
-    loadUser();
-  }, [navigate, token]);
+    const handleSearch = (e) => {
+        const query = e.target.value.toLowerCase();
+        setSearchQuery(query);
 
-  // 🔹 Fetch buku dan kategori
-  useEffect(() => {
-    if (!token) {
-      toast.warn("Kamu belum login!");
-      navigate("/");
-      return;
-    }
-
-    const loadData = async () => {
-      try {
-        const [bookResult, categoryResult] = await Promise.all([
-          bookService.fetchBooks(),
-          bookService.fetchCategories(),
-        ]);
-
-        if (bookResult.success) {
-          setBooks(bookResult.data);
-          setFilteredBooks(bookResult.data);
+        if (query === "") {
+            setFilteredBooks(books);
         } else {
-          toast.error(bookResult.error);
+            const filtered = books.filter(
+                (book) =>
+                    book.title.toLowerCase().includes(query) ||
+                    book.author?.toLowerCase().includes(query) ||
+                    book.publisher?.toLowerCase().includes(query)
+            );
+            setFilteredBooks(filtered);
         }
-
-        if (categoryResult.success) {
-          setCategories(categoryResult.data);
-        } else {
-          // Jika kategori tidak tersedia (403), tetap lanjutkan tanpa filter kategori
-          if (!categoryResult.needsPublicEndpoint) {
-            console.warn("Kategori tidak tersedia:", categoryResult.error);
-          }
-          setCategories([]);
-        }
-      } catch (error) {
-        toast.error("Gagal memuat data.");
-      } finally {
-        setLoading(false);
-      }
     };
 
-    loadData();
-  }, [navigate, token]);
+    const handleAddToCart = async (bookId) => {
+        try {
+            const response = await cartService.addToCart(bookId, 1);
+            if (response.success) {
+                alert("Berhasil ditambahkan ke keranjang! 🛒");
+            }
+        } catch (error) {
+            alert(error.message || "Gagal menambahkan ke keranjang");
+        }
+    };
 
-  // 🔹 Filter & Search
-  useEffect(() => {
-    let filtered = books;
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (book) =>
-          book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (book.author && book.author.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-    if (selectedCategory) {
-      filtered = filtered.filter(
-        (book) => book.category_id == selectedCategory
-      );
-    }
-    setFilteredBooks(filtered);
-  }, [books, searchTerm, selectedCategory]);
+    const handleBuyNow = (bookId) => {
+        const book = filteredBooks.find((b) => b.id === bookId);
+        if (!book) return;
 
-  // 🔹 Tambah ke keranjang
-  const handleAddToCart = async (bookId) => {
-    const result = await bookService.addToCart(bookId);
-    if (result.success) {
-      toast.success("Buku ditambahkan ke keranjang!");
-    } else {
-      toast.error(result.error);
-    }
-  };
+        navigate("/user/checkout", {
+            state: {
+                buyNow: true,
+                data: {
+                    book: book,
+                    quantity: 1,
+                },
+            },
+        });
+    };
 
-  // 🔹 Checkout
-  const handleCheckout = async (bookId) => {
-    const result = await bookService.addToCart(bookId);
-    if (result.success) {
-      toast.success("Buku ditambahkan ke keranjang!");
-      navigate("/checkout");
-    } else {
-      toast.error(result.error);
-    }
-  };
-
-  // 🔹 Loading UI
-  if (loading) {
-    return (
-      <div className={`${darkMode ? "dark" : ""} min-h-screen bg-gray-50 dark:bg-gray-900`}>
-        <NavbarUser darkMode={darkMode} user={user} />
-        <main className="flex-1 flex items-center justify-center p-8">
-          <div className="text-lg">Memuat buku...</div>
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`${darkMode ? "dark" : ""} min-h-screen bg-gray-50 dark:bg-gray-900`}>
-      <NavbarUser darkMode={darkMode} user={user} />
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-center text-green-700 mb-10">
-          📚 Daftar Buku Tersedia
-        </h1>
-
-        {/* Search & Filter */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 max-w-2xl mx-auto">
-          <input
-            type="text"
-            placeholder="Cari buku berdasarkan judul atau penulis..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          {categories.length > 0 && (
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">Semua Kategori</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Book Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredBooks.map((book) => (
-            <div
-              key={book.id}
-              className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition dark:border dark:border-gray-700"
-            >
-              <img
-                src={
-                  book.image_url ||
-                  "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
-                }
-                alt={book.title}
-                className="w-full h-56 object-cover"
-              />
-              <div className="p-4">
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
-                  {book.title}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {book.author || "Tidak diketahui"}
-                </p>
-                <p className="text-sm text-gray-500 mb-2">
-                  {book.publisher || "Tidak diketahui"}{" "}
-                  {book.year ? `(${book.year})` : ""}
-                </p>
-                <p className="font-bold text-green-700 text-lg mb-3">
-                  Rp {book.price ? book.price.toLocaleString("id-ID") : "0"}
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-                  {book.description || "Tidak ada deskripsi."}
-                </p>
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleAddToCart(book.id)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg w-full transition"
-                  >
-                    Tambah ke Keranjang 🛒
-                  </button>
-                  <button
-                    onClick={() => handleCheckout(book.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg w-full transition"
-                  >
-                    Beli Sekarang 💳
-                  </button>
-                </div>
-              </div>
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
-          ))}
-        </div>
+        );
+    }
 
-        {/* Jika tidak ada buku */}
-        {filteredBooks.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
-              Tidak ada buku yang ditemukan.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+    return (
+        <UserLayout>
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <BookOpen className="w-8 h-8 text-blue-600" />
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                            Katalog Buku
+                        </h1>
+                    </div>
+                    <button
+                        onClick={() => navigate("/user/cart")}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+                    >
+                        <ShoppingCart className="w-5 h-5" />
+                        Keranjang
+                    </button>
+                </div>
 
-export default BooksList;
+                {/* Search */}
+                <div className="mb-6">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={handleSearch}
+                            placeholder="Cari buku berdasarkan judul, penulis, atau penerbit..."
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+                        />
+                    </div>
+                </div>
+
+                {/* Books Grid */}
+                {filteredBooks.length === 0 ? (
+                    <div className="text-center py-16">
+                        <BookOpen className="w-24 h-24 mx-auto text-gray-300 mb-4" />
+                        <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Tidak Ada Buku
+                        </h2>
+                        <p className="text-gray-500">
+                            {searchQuery
+                                ? "Tidak ditemukan buku yang sesuai"
+                                : "Belum ada buku tersedia"}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {filteredBooks.map((book) => (
+                            <div
+                                key={book.id}
+                                className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition dark:border dark:border-gray-700"
+                            >
+                                <img
+                                    src={
+                                        book.image_url ||
+                                        "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
+                                    }
+                                    alt={book.title}
+                                    className="w-full h-56 object-cover"
+                                />
+                                <div className="p-4">
+                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
+                                        {book.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        {book.author || "Tidak diketahui"}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mb-2">
+                                        {book.publisher || "Tidak diketahui"}{" "}
+                                        {book.year ? `(${book.year})` : ""}
+                                    </p>
+
+                                    {/* Stock */}
+                                    <p
+                                        className={`text-sm font-medium mb-2 ${
+                                            book.stock > 0
+                                                ? "text-green-600"
+                                                : "text-red-500"
+                                        }`}
+                                    >
+                                        {book.stock > 0
+                                            ? `Stok tersedia: ${book.stock}`
+                                            : "Stok habis"}
+                                    </p>
+
+                                    {/* Price */}
+                                    <p className="font-bold text-green-700 text-lg mb-3">
+                                        Rp{" "}
+                                        {book.price
+                                            ? book.price.toLocaleString("id-ID")
+                                            : "0"}
+                                    </p>
+
+                                    {/* Description */}
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                                        {book.description ||
+                                            "Tidak ada deskripsi."}
+                                    </p>
+
+                                    {/* Buttons */}
+                                    <div className="space-y-2">
+                                        <button
+                                            onClick={() =>
+                                                handleAddToCart(book.id)
+                                            }
+                                            disabled={book.stock === 0}
+                                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg w-full transition"
+                                        >
+                                            {book.stock === 0
+                                                ? "Stok Habis"
+                                                : "Tambah ke Keranjang 🛒"}
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                handleBuyNow(book.id)
+                                            }
+                                            disabled={book.stock === 0}
+                                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg w-full transition"
+                                        >
+                                            {book.stock === 0
+                                                ? "Stok Habis"
+                                                : "Beli Sekarang 💳"}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </UserLayout>
+    );
+}

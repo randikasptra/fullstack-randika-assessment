@@ -4,8 +4,12 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookController;
-use App\Http\Controllers\User\BookUserController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\CheckoutController;
+use App\Http\Controllers\User\PaymentController;
+use App\Http\Controllers\User\OrderController;
+use App\Http\Controllers\User\BookUserController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
@@ -113,6 +117,36 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+
+// Cart Routes (Protected)
+Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function () {
+    Route::prefix('cart')->group(function () {
+        Route::get('/', [CartController::class, 'index']);
+        Route::post('/add', [CartController::class, 'add']);
+        Route::put('/{id}', [CartController::class, 'update']);
+        Route::delete('/{id}', [CartController::class, 'destroy']);
+        Route::delete('/', [CartController::class, 'clear']);
+    });
+
+    // Checkout Routes
+    Route::prefix('checkout')->group(function () {
+        Route::post('/create-order', [CheckoutController::class, 'createOrderFromCart']);
+        Route::post('/buy-now', [CheckoutController::class, 'buyNow']);
+    });
+
+    // Payment Routes
+    Route::get('/payment/{orderId}', [PaymentController::class, 'getSnapToken']);
+
+    // Order Routes
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
+        Route::get('/{id}', [OrderController::class, 'show']);
+        Route::post('/{id}/cancel', [OrderController::class, 'cancel']);
+    });
+});
+
+// Midtrans Webhook (Public)
+Route::post('/payment/notification', [PaymentController::class, 'notification']);
 
 
 Route::middleware('auth:sanctum')->group(function () {

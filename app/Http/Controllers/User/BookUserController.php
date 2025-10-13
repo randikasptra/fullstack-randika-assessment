@@ -2,33 +2,51 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Http\Controllers\Controller;
 use App\Models\Book;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 
-class BookUserController extends Controller
+class BookController extends Controller
 {
     public function index()
     {
-        try {
-            // Ambil buku dengan nama kategori
-            $books = Book::with('category:id,name')->get();
+        $books = Book::with('category')
+            ->where('stock', '>', 0)
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-            return response()->json($books, 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Gagal memuat buku: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'data' => $books,
+        ]);
     }
 
     public function show($id)
     {
-        try {
-            $book = Book::with('category:id,name')->findOrFail($id);
-            return response()->json($book, 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Buku tidak ditemukan'], 404);
-        }
+        $book = Book::with('category')->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $book,
+        ]);
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+
+        $books = Book::with('category')
+            ->where('stock', '>', 0)
+            ->where(function ($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                  ->orWhere('author', 'like', "%{$query}%")
+                  ->orWhere('publisher', 'like', "%{$query}%");
+            })
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $books,
+        ]);
     }
 }

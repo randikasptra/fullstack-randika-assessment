@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const API_URL = '/api/user/books';
+const API_URL = '/api/user/orders';
 
-const bookService = {
-    // Get all books
-    getAllBooks: async () => {
+const orderService = {
+    // Get all orders
+    getOrders: async () => {
         try {
             const response = await axios.get(API_URL);
             return response.data;
@@ -13,22 +13,20 @@ const bookService = {
         }
     },
 
-    // Get book by ID
-    getBookById: async (bookId) => {
+    // Get order detail
+    getOrderDetail: async (orderId) => {
         try {
-            const response = await axios.get(`${API_URL}/${bookId}`);
+            const response = await axios.get(`${API_URL}/${orderId}`);
             return response.data;
         } catch (error) {
             throw error.response?.data || error;
         }
     },
 
-    // Search books
-    searchBooks: async (query) => {
+    // Cancel order
+    cancelOrder: async (orderId) => {
         try {
-            const response = await axios.get(`${API_URL}/search`, {
-                params: { q: query }
-            });
+            const response = await axios.post(`${API_URL}/${orderId}/cancel`);
             return response.data;
         } catch (error) {
             throw error.response?.data || error;
@@ -36,4 +34,4 @@ const bookService = {
     },
 };
 
-export default bookService;
+export default orderService;
