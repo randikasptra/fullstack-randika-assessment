@@ -158,18 +158,6 @@ export default function SettingsAdmin() {
                     <form onSubmit={handleUpdatePassword} className="space-y-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Password Saat Ini
-                        </label>
-                        <input
-                          type="password"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          placeholder="Masukkan password saat ini"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
                           Password Baru
                         </label>
                         <input

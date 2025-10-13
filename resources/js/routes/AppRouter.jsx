@@ -22,6 +22,7 @@ import Checkout from "../pages/user/Checkout";
 import Payment from "../pages/user/Payment";
 import Orders from "../pages/user/Orders";
 import OrderDetail from "../pages/user/OrderDetail";
+import Profile from "../pages/user/Profile";
 
 const AppRouter = () => {
     return (
@@ -49,6 +50,7 @@ const AppRouter = () => {
                 <Route path="/user/checkout" element={<Checkout />} />
                 <Route path="/user/payment/:orderId" element={<Payment />} />
                 <Route path="/user/orders" element={<Orders />} />
+                <Route path="/user/profile-users" element={<Profile />} />
                 <Route path="/user/orders/:id" element={<OrderDetail />} />
             </Routes>
         </BrowserRouter>

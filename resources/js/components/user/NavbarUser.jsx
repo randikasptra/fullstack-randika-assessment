@@ -2,8 +2,18 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import {
+  FiHome,
+  FiShoppingCart,
+  FiPackage,
+  FiUser,
+  FiLogOut,
+  FiMenu,
+  FiX,
+  FiBook
+} from "react-icons/fi";
 
-export default function NavbarUser({ darkMode, user }) {
+export default function NavbarUser({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -43,65 +53,56 @@ export default function NavbarUser({ darkMode, user }) {
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
-    { path: "/user/book-list", label: "Katalog Buku" },
-    { path: "/user/cart", label: "Keranjang" },
-    { path: "/user/orders", label: "Pesanan Saya" },
-    { path: "/user/dashboard", label: "Dashboard" },
-    { path: "/user/profile", label: "Profil" },
+    { path: "/user/book-list", label: "Katalog Buku", icon: <FiBook className="w-4 h-4" /> },
+    { path: "/user/cart", label: "Keranjang", icon: <FiShoppingCart className="w-4 h-4" /> },
+    { path: "/user/orders", label: "Pesanan Saya", icon: <FiPackage className="w-4 h-4" /> },
+    { path: "/user/dashboard", label: "Dashboard", icon: <FiHome className="w-4 h-4" /> },
+    { path: "/user/profile-users", label: "Profile", icon: <FiUser className="w-4 h-4" /> },
   ];
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-white shadow-lg border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link
             to="/user/book-list"
-            className="text-xl font-bold text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            className="flex items-center space-x-2 text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent hover:from-purple-700 hover:to-pink-600 transition-all duration-300"
           >
-            📚 BookStore
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-400 rounded-lg flex items-center justify-center">
+              <FiBook className="w-4 h-4 text-white" />
+            </div>
+            <span>Moura Store</span>
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8 ml-10">
-            {navLinks.map(({ path, label }) => (
+          <div className="hidden md:flex items-center space-x-1 ml-10">
+            {navLinks.map(({ path, label, icon }) => (
               <Link
                 key={path}
                 to={path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive(path)
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-gradient-to-r from-purple-50 to-pink-50 text-purple-600 border border-purple-100"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
-                {label}
+                {icon}
+                <span>{label}</span>
               </Link>
             ))}
           </div>
 
           {/* Right Section */}
-          <div className="flex items-center space-x-4">
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={() => window.dispatchEvent(new Event("toggleDarkMode"))}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? (
-                <span className="text-yellow-500 text-sm">☀️</span>
-              ) : (
-                <span className="text-gray-600 text-sm">🌙</span>
-              )}
-            </button>
-
+          <div className="flex items-center space-x-3">
             {/* User Info */}
             {user && (
-              <div className="hidden sm:flex items-center space-x-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              <div className="hidden sm:flex items-center space-x-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl px-4 py-2 border border-purple-100">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-400 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                   {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                 </div>
                 <div className="hidden lg:block">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  <p className="text-sm font-medium text-gray-800">
                     {user.name}
                   </p>
                 </div>
@@ -111,19 +112,27 @@ export default function NavbarUser({ darkMode, user }) {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center space-x-2"
+              className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
             >
-              <span>🚪</span>
-              <span className="hidden sm:inline">Logout</span>
+              <FiLogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+
+            {/* Mobile Logout */}
+            <button
+              onClick={handleLogout}
+              className="sm:hidden p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+            >
+              <FiLogOut className="w-4 h-4" />
             </button>
 
             {/* Mobile menu button */}
             <button
               type="button"
-              className="md:hidden bg-gray-100 dark:bg-gray-700 p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="md:hidden bg-gray-50 hover:bg-gray-100 p-2 rounded-lg text-gray-600 transition-colors border border-gray-200"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {mobileOpen ? "✖" : "☰"}
+              {mobileOpen ? <FiX className="w-5 h-5" /> : <FiMenu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -131,20 +140,21 @@ export default function NavbarUser({ darkMode, user }) {
 
       {/* Mobile Nav */}
       {mobileOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-          <div className="px-2 pt-2 pb-3 space-y-1">
-            {navLinks.map(({ path, label }) => (
+        <div className="md:hidden bg-white border-t border-gray-100 shadow-xl">
+          <div className="px-4 py-3 space-y-2">
+            {navLinks.map(({ path, label, icon }) => (
               <Link
                 key={path}
                 to={path}
-                onClick={() => setMobileOpen(false)} // tutup menu setelah klik
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
                   isActive(path)
-                    ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400"
-                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-gradient-to-r from-purple-50 to-pink-50 text-purple-600 border border-purple-100"
+                    : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                {label}
+                {icon}
+                <span>{label}</span>
               </Link>
             ))}
           </div>

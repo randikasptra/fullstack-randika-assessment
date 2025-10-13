@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\User\CartController;
+use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\PaymentController;
 use App\Http\Controllers\User\OrderController;
@@ -162,6 +163,13 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
     // Payment Routes
     Route::get('/payment/{orderId}', [PaymentController::class, 'getSnapToken']);
     Route::post('/payment/{orderId}/update-status', [PaymentController::class, 'updateStatus']); // NEW
+});
+
+Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function () {
+    // ... routes lain (cart, orders, dll.)
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::post('/change-password', [ProfileController::class, 'changePassword']);
 });
 
 // Midtrans Webhook (Public)
