@@ -1,36 +1,58 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../../../config/api'; // Sesuaikan path
 
-const API_URL = '/api/user/books';
+const getAuthToken = () => {
+    return localStorage.getItem("auth_token");
+};
+
+const getAuthHeaders = () => {
+    const token = getAuthToken();
+    return token ? {
+        Authorization: `Bearer ${token}`
+    } : {};
+};
 
 const bookService = {
-    // Get all books
     getAllBooks: async () => {
         try {
-            const response = await axios.get(API_URL);
-            return response.data;
+            // ❌ SALAH: API_URL tidak didefinisikan
+            // const response = await axios.get(API_URL);
+
+            // ✅ BENAR: Gunakan API_BASE_URL dengan endpoint lengkap
+            const response = await axios.get(`${API_BASE_URL}/api/user/books`, {
+                headers: getAuthHeaders()
+            });
+
+            // Return response.data (bisa array langsung atau object dengan property data)
+            // Sesuaikan dengan controller Anda
+            return response.data.data || response.data;
         } catch (error) {
+            console.error("Error fetching books:", error);
             throw error.response?.data || error;
         }
     },
 
-    // Get book by ID
     getBookById: async (bookId) => {
         try {
-            const response = await axios.get(`${API_URL}/${bookId}`);
-            return response.data;
+            const response = await axios.get(`${API_BASE_URL}/api/user/books/${bookId}`, {
+                headers: getAuthHeaders()
+            });
+            return response.data.data || response.data;
         } catch (error) {
+            console.error("Error fetching book:", error);
             throw error.response?.data || error;
         }
     },
 
-    // Search books
     searchBooks: async (query) => {
         try {
-            const response = await axios.get(`${API_URL}/search`, {
-                params: { q: query }
+            const response = await axios.get(`${API_BASE_URL}/api/user/books/search`, {
+                params: { q: query },
+                headers: getAuthHeaders()
             });
-            return response.data;
+            return response.data.data || response.data;
         } catch (error) {
+            console.error("Error searching books:", error);
             throw error.response?.data || error;
         }
     },

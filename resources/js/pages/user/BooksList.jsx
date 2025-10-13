@@ -17,19 +17,32 @@ export default function BooksList() {
         loadBooks();
     }, []);
 
-    const loadBooks = async () => {
-        try {
-            setLoading(true);
-            const booksData = await bookService.getAllBooks();
-            setBooks(Array.isArray(booksData) ? booksData : []);
-            setFilteredBooks(Array.isArray(booksData) ? booksData : []);
-        } catch (error) {
-            console.error("Error loading books:", error);
-            alert(error.message || "Gagal memuat buku");
-        } finally {
-            setLoading(false);
+   const loadBooks = async () => {
+    try {
+        setLoading(true);
+        const response = await bookService.getAllBooks();
+
+        console.log('Full response:', response); // Debug
+
+        // Handle jika response adalah object dengan property data
+        let booksData = [];
+        if (response && typeof response === 'object') {
+            if (Array.isArray(response)) {
+                booksData = response;
+            } else if (response.data && Array.isArray(response.data)) {
+                booksData = response.data;
+            }
         }
-    };
+
+        setBooks(booksData);
+        setFilteredBooks(booksData);
+    } catch (error) {
+        console.error("Error loading books:", error);
+        alert(error.message || "Gagal memuat buku");
+    } finally {
+        setLoading(false);
+    }
+};
 
     const handleSearch = (e) => {
         const query = e.target.value.toLowerCase();
