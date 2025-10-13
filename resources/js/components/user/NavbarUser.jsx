@@ -7,6 +7,7 @@ export default function NavbarUser({ darkMode, user }) {
     const navigate = useNavigate();
     const location = useLocation();
 
+
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
 
@@ -59,7 +60,6 @@ export default function NavbarUser({ darkMode, user }) {
                                     { path: "/user/book-list", label: "Belanja Buku" },
                                     { path: "/user/dashboard", label: "Dashboard" },
                                     { path: "/user/orders", label: "Pesanan Saya" },
-                                    { path: "/user/wishlist", label: "Wishlist" },
                                     { path: "/user/library", label: "Koleksi" },
                                     { path: "/user/profile", label: "Profil" },
                                 ].map(({ path, label }) => (
