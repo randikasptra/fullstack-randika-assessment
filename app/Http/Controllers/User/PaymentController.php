@@ -25,13 +25,13 @@ class PaymentController extends Controller
             ->where('user_id', auth()->id())
             ->findOrFail($orderId);
 
+        // Di PaymentController.php - method getSnapToken
         if ($order->status !== 'pending') {
             return response()->json([
                 'success' => false,
-                'message' => 'Order sudah diproses',
+                'message' => 'Order sudah diproses atau dibatalkan',
             ], 400);
         }
-
         // Jika sudah ada snap token, return yang lama
         if ($order->snap_token) {
             return response()->json([
@@ -89,6 +89,45 @@ class PaymentController extends Controller
                 'message' => 'Gagal membuat payment token: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function updateStatus(Request $request, $orderId)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:paid,pending,cancelled',
+            'transaction_id' => 'nullable|string',
+            'payment_type' => 'nullable|string',
+        ]);
+
+        $order = Order::where('user_id', auth()->id())
+            ->findOrFail($orderId);
+
+        if ($order->status === 'paid') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order sudah dibayar',
+            ], 400);
+        }
+
+        $updateData = [
+            'status' => $validated['status'],
+        ];
+
+        if ($validated['status'] === 'paid') {
+            $updateData['paid_at'] = now();
+
+            if (isset($validated['payment_type'])) {
+                $updateData['payment_type'] = $validated['payment_type'];
+            }
+        }
+
+        $order->update($updateData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pembayaran berhasil diupdate',
+            'order' => $order->fresh(),
+        ]);
     }
 
     public function notification(Request $request)

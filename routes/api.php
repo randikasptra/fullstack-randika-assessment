@@ -135,7 +135,8 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
     });
 
     // Payment Routes
-    Route::get('/payment/{orderId}', [PaymentController::class, 'getSnapToken']);
+    // Route::get('/payment/{orderId}', [PaymentController::class, 'getSnapToken']);
+
 
     // Order Routes
     Route::prefix('orders')->group(function () {
@@ -143,6 +144,14 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
         Route::get('/{id}', [OrderController::class, 'show']);
         Route::post('/{id}/cancel', [OrderController::class, 'cancel']);
     });
+});
+
+Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function () {
+    // ... existing routes
+
+    // Payment Routes
+    Route::get('/payment/{orderId}', [PaymentController::class, 'getSnapToken']);
+    Route::post('/payment/{orderId}/update-status', [PaymentController::class, 'updateStatus']); // NEW
 });
 
 // Midtrans Webhook (Public)
