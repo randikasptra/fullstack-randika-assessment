@@ -1,7 +1,8 @@
+// resources/js/pages/admin/SettingsAdmin.jsx
 import React, { useEffect, useState } from "react";
-import axios from "../../utils/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 import { toast } from "react-toastify";
+import * as settingsService from "../../services/admin/settingsService";
 
 export default function SettingsAdmin() {
   const [user, setUser] = useState(null);
@@ -18,56 +19,45 @@ export default function SettingsAdmin() {
 
   const loadProfile = async () => {
     setLoading(true);
-    try {
-      console.log("Token saat loadProfile:", localStorage.getItem("auth_token"));
-      const res = await axios.get("/settings/profile");
-      console.log("Response profile:", res.data);
-      setUser(res.data.user);
-      setName(res.data.user.name);
-    } catch (err) {
-      console.error("Error loadProfile:", err);
-      toast.error(
-        err.response?.data?.message ||
-          "Gagal memuat data pengguna. Pastikan login."
-      );
-    } finally {
-      setLoading(false);
+    const result = await settingsService.fetchProfile();
+
+    if (result.success) {
+      setUser(result.data.user);
+      setName(result.data.user.name);
+    } else {
+      toast.error(result.error);
     }
+    setLoading(false);
   };
 
   const handleUpdateName = async (e) => {
     e.preventDefault();
-    try {
-      const res = await axios.put("/settings/update-name", { name });
-      console.log("Update name response:", res.data);
-      setUser(res.data.user);
-      toast.success(res.data.message);
-    } catch (err) {
-      console.error("Error updateName:", err);
-      toast.error(err.response?.data?.message || "Gagal memperbarui nama.");
+
+    const result = await settingsService.updateName(name);
+    if (result.success) {
+      setUser(result.data.user);
+      toast.success(result.data.message);
+    } else {
+      toast.error(result.error);
     }
   };
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    try {
-      const res = await axios.put("/settings/update-password", {
-        current_password: currentPassword,
-        new_password: newPassword,
-        new_password_confirmation: confirmPassword,
-      });
-      console.log("Update password response:", res.data);
+
+    const result = await settingsService.updatePassword(
+      currentPassword,
+      newPassword,
+      confirmPassword
+    );
+
+    if (result.success) {
       toast.success("Password berhasil diperbarui!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    } catch (err) {
-      console.error("Error updatePassword:", err);
-      toast.error(
-        err.response?.data?.errors?.current_password?.[0] ||
-          err.response?.data?.message ||
-          "Gagal memperbarui password."
-      );
+    } else {
+      toast.error(result.error);
     }
   };
 

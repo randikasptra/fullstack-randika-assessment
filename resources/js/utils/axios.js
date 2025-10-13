@@ -1,16 +1,17 @@
+// resources/js/utils/axios.js
 import axios from "axios";
+import { API_BASE_URL } from "../../config/api";
 
 const instance = axios.create({
-  baseURL: "http://127.0.0.1:8000/api",
+  baseURL: `${API_BASE_URL}/api`,
 });
 
-// Interceptor: otomatis kirim Authorization header
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem("auth_token");
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   } else {
-    console.warn("Token tidak ditemukan di localStorage!");
+    console.warn("⚠️ Token tidak ditemukan di localStorage!");
   }
   return config;
 });
