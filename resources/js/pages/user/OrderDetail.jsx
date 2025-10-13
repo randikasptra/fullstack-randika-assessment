@@ -5,6 +5,8 @@ import cartService from '../../services/user/cartService';
 import checkoutService from '../../services/user/checkoutService';
 import paymentService from '../../services/user/paymentService';
 import orderService from '../../services/user/orderService';
+import UserLayout from "../../layouts/UserLayout";
+
 
 
 export default function OrderDetail() {
@@ -84,6 +86,8 @@ export default function OrderDetail() {
     }
 
     return (
+        <UserLayout>
+
         <div className="max-w-5xl mx-auto px-4 py-8">
             {/* Header */}
             <div className="flex items-center gap-4 mb-8">
@@ -263,5 +267,7 @@ export default function OrderDetail() {
                 </div>
             </div>
         </div>
+        </UserLayout>
+
     );
 }
