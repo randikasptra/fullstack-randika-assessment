@@ -1,11 +1,11 @@
-// js/pages/admin/BooksManager.jsx
+// resources/js/pages/admin/BooksManager.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 import BookTable from "../../components/admin/BookTable";
 import BookModal from "../../components/admin/BookModal";
 import SearchInput from "../../components/admin/SearchInput";
+import * as bookService from "../../services/admin/bookService";
 
 const BooksManager = () => {
     const [books, setBooks] = useState([]);
@@ -16,11 +16,9 @@ const BooksManager = () => {
     const [editBook, setEditBook] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const token = localStorage.getItem("auth_token");
-
     useEffect(() => {
-        fetchBooks();
-        fetchCategories();
+        loadBooks();
+        loadCategories();
     }, []);
 
     useEffect(() => {
@@ -31,27 +29,21 @@ const BooksManager = () => {
         setFilteredBooks(filtered);
     }, [books, searchTerm]);
 
-    const fetchBooks = async () => {
-        try {
-            const res = await axios.get("http://127.0.0.1:8000/api/books", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setBooks(res.data);
-        } catch (error) {
-            console.error(error);
-            toast.error("Gagal memuat buku.");
+    const loadBooks = async () => {
+        const result = await bookService.fetchBooks();
+        if (result.success) {
+            setBooks(result.data);
+        } else {
+            toast.error(result.error);
         }
     };
 
-    const fetchCategories = async () => {
-        try {
-            const res = await axios.get("http://127.0.0.1:8000/api/categories", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setCategories(res.data);
-        } catch (error) {
-            console.error(error);
-            toast.error("Gagal memuat kategori.");
+    const loadCategories = async () => {
+        const result = await bookService.fetchCategories();
+        if (result.success) {
+            setCategories(result.data);
+        } else {
+            toast.error(result.error);
         }
     };
 
@@ -78,51 +70,36 @@ const BooksManager = () => {
 
     const handleDelete = async (id) => {
         if (!confirm("Yakin ingin menghapus buku ini?")) return;
-        try {
-            await axios.delete(`http://127.0.0.1:8000/api/books/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+
+        const result = await bookService.deleteBook(id);
+        if (result.success) {
             toast.success("Buku dihapus!");
-            fetchBooks();
-        } catch (error) {
-            toast.error("Gagal menghapus buku.");
+            loadBooks();
+        } else {
+            toast.error(result.error);
         }
     };
 
     const handleSaveBook = async (formData) => {
-        try {
-            if (modalType === 'edit' && editBook) {
-                // Gunakan POST karena Laravel tidak support PUT dengan file upload
-                await axios.post(
-                    `http://127.0.0.1:8000/api/books/${editBook.id}`,
-                    formData,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
+        let result;
+
+        if (modalType === 'edit' && editBook) {
+            result = await bookService.updateBook(editBook.id, formData);
+            if (result.success) {
                 toast.success("Buku berhasil diperbarui!");
-            } else {
-                await axios.post(
-                    "http://127.0.0.1:8000/api/books",
-                    formData,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                            'Content-Type': 'multipart/form-data'
-                        }
-                    }
-                );
+            }
+        } else {
+            result = await bookService.createBook(formData);
+            if (result.success) {
                 toast.success("Buku berhasil ditambahkan!");
             }
+        }
+
+        if (result.success) {
             handleCloseModal();
-            fetchBooks();
-        } catch (error) {
-            console.error(error);
-            const errorMsg = error.response?.data?.message || "Gagal menyimpan buku.";
-            toast.error(errorMsg);
+            loadBooks();
+        } else {
+            toast.error(result.error);
         }
     };
 
