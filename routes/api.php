@@ -146,6 +146,16 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
     });
 });
 
+
+
+Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+    Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+    Route::get('/orders/stats', [OrderController::class, 'stats']);
+});
+
 Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function () {
     // ... existing routes
 
