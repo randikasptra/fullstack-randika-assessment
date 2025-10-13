@@ -1,11 +1,11 @@
-// js/pages/admin/CategoryManager.jsx
+// resources/js/pages/admin/CategoryManager.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 import CategoryTable from "../../components/admin/CategoryTable";
 import CategoryModal from "../../components/admin/CategoryModal";
 import SearchInputCategory from "../../components/admin/SearchInput";
+import * as categoryService from "../../services/admin/categoryService";
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
@@ -15,10 +15,8 @@ const CategoryManager = () => {
     const [editCategory, setEditCategory] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const token = localStorage.getItem("auth_token");
-
     useEffect(() => {
-        fetchCategories();
+        loadCategories();
     }, []);
 
     useEffect(() => {
@@ -29,16 +27,12 @@ const CategoryManager = () => {
         setFilteredCategories(filtered);
     }, [categories, searchTerm]);
 
-    const fetchCategories = async () => {
-        try {
-            const res = await axios.get("http://127.0.0.1:8000/api/categories", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setCategories(res.data);
-        } catch (error) {
-            console.error(error);
-            const errorMsg = error.response?.data?.message || "Gagal memuat kategori.";
-            toast.error(errorMsg);
+    const loadCategories = async () => {
+        const result = await categoryService.fetchCategories();
+        if (result.success) {
+            setCategories(result.data);
+        } else {
+            toast.error(result.error);
         }
     };
 
@@ -75,56 +69,48 @@ const CategoryManager = () => {
 
         if (!confirm(confirmMessage)) return;
 
-        try {
-            await axios.delete(`http://127.0.0.1:8000/api/categories/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            toast.success("🗑️ Kategori berhasil dihapus!");
-            fetchCategories();
-        } catch (error) {
-            console.error(error);
-            const errorMsg = error.response?.data?.message || "Gagal menghapus kategori.";
+        const result = await categoryService.deleteCategory(id);
 
+        if (result.success) {
+            toast.success("🗑️ Kategori berhasil dihapus!");
+            loadCategories();
+        } else {
             // Tampilkan error yang lebih spesifik
-            if (error.response?.status === 422) {
-                toast.error("❌ " + errorMsg);
-            } else if (error.response?.status === 403) {
+            if (result.status === 422) {
+                toast.error("❌ " + result.error);
+            } else if (result.status === 403) {
                 toast.error("🔒 Anda tidak memiliki akses untuk menghapus kategori.");
             } else {
-                toast.error("❌ " + errorMsg);
+                toast.error("❌ " + result.error);
             }
         }
     };
 
     const handleSaveCategory = async (formData) => {
-        try {
-            if (modalType === 'edit' && editCategory) {
-                await axios.put(
-                    `http://127.0.0.1:8000/api/categories/${editCategory.id}`,
-                    formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+        let result;
+
+        if (modalType === 'edit' && editCategory) {
+            result = await categoryService.updateCategory(editCategory.id, formData);
+            if (result.success) {
                 toast.success("✅ Kategori berhasil diperbarui!");
-            } else {
-                await axios.post(
-                    "http://127.0.0.1:8000/api/categories",
-                    formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+            }
+        } else {
+            result = await categoryService.createCategory(formData);
+            if (result.success) {
                 toast.success("✅ Kategori berhasil ditambahkan!");
             }
-            handleCloseModal();
-            fetchCategories();
-        } catch (error) {
-            console.error(error);
-            const errorMsg = error.response?.data?.message || "Gagal menyimpan kategori.";
+        }
 
+        if (result.success) {
+            handleCloseModal();
+            loadCategories();
+        } else {
             // Handle validation errors
-            if (error.response?.data?.errors) {
-                const errors = Object.values(error.response.data.errors).flat();
+            if (result.errors) {
+                const errors = Object.values(result.errors).flat();
                 errors.forEach(err => toast.error(err));
             } else {
-                toast.error("❌ " + errorMsg);
+                toast.error("❌ " + result.error);
             }
         }
     };
