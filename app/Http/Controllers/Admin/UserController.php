@@ -23,7 +23,9 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'role' => ['required', Rule::in(['admin', 'librarian', 'member'])],
+            // 'role' => ['required', Rule::in(['admin', 'librarian', 'member'])],
+            'role' => ['required', Rule::in(['admin', 'user'])],
+
             'password' => 'required|string|min:6|confirmed',
         ]);
 
