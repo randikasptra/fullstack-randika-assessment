@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Edit, Save, X, Mail, Phone, MapPin, Lock } from "lucide-react";
 import { toast } from "react-toastify";
-import profileService from "../../services/user/profileService";
+
+// Components
 import UserLayout from "../../layouts/UserLayout";
+import ProfileHeader from "../../components/user/ProfileHeader";
+import ProfileInfoCard from "../../components/user/ProfileInfoCard";
+import ChangePasswordCard from "../../components/user/ChangePasswordCard";
+import LoadingSpinner from "../../components/user/LoadingSpinner";
+
+// Services
+import profileService from "../../services/user/profileService";
 
 export default function Profile() {
     const navigate = useNavigate();
@@ -13,9 +20,9 @@ export default function Profile() {
     const [saving, setSaving] = useState(false);
     const [passwordData, setPasswordData] = useState({
         new_password: "",
-        new_password_confirmation: "", // Ubah dari confirm_password ke new_password_confirmation
+        new_password_confirmation: "",
     });
-    const [passwordErrors, setPasswordErrors] = useState({}); // State buat error real-time
+    const [passwordErrors, setPasswordErrors] = useState({});
 
     useEffect(() => {
         fetchProfile();
@@ -42,7 +49,7 @@ export default function Profile() {
     const handleEditToggle = () => {
         setEditing(!editing);
         if (editing) {
-            setPasswordData({ new_password: "", new_password_confirmation: "" }); // Update reset
+            setPasswordData({ new_password: "", new_password_confirmation: "" });
             setPasswordErrors({});
         }
     };
@@ -61,32 +68,30 @@ export default function Profile() {
             [name]: value,
         }));
 
-        // Real-time validation
         setPasswordErrors(validatePassword({ ...passwordData, [name]: value }));
     };
 
-    // Helper buat validasi password real-time
     const validatePassword = (data) => {
         const errors = {};
         const newPass = data.new_password;
 
         if (newPass.length > 0) {
             if (newPass.length < 8) {
-                errors.new_password = "Min 8 karakter";
+                errors.new_password = "Minimal 8 karakter";
             }
             if (!/[a-z]/.test(newPass)) {
-                errors.new_password = "Harus ada huruf kecil (lowercase)";
+                errors.new_password = "Harus ada huruf kecil";
             }
             if (!/[A-Z]/.test(newPass)) {
-                errors.new_password = "Harus ada huruf besar (uppercase)";
+                errors.new_password = "Harus ada huruf besar";
             }
             if (!/[0-9]/.test(newPass)) {
                 errors.new_password = "Harus ada angka";
             }
         }
 
-        if (data.new_password_confirmation && data.new_password_confirmation !== newPass) { // Update referensi
-            errors.new_password_confirmation = "Konfirmasi tidak cocok";
+        if (data.new_password_confirmation && data.new_password_confirmation !== newPass) {
+            errors.new_password_confirmation = "Konfirmasi password tidak cocok";
         }
 
         return errors;
@@ -116,7 +121,7 @@ export default function Profile() {
         e.preventDefault();
         const fullErrors = validatePassword(passwordData);
         if (Object.keys(fullErrors).length > 0) {
-            toast.error("Perbaiki error password dulu!");
+            toast.error("Perbaiki error password terlebih dahulu!");
             return;
         }
 
@@ -124,17 +129,16 @@ export default function Profile() {
             const response = await profileService.changePassword(passwordData);
             if (response.success) {
                 toast.success(response.message);
-                setPasswordData({ new_password: "", new_password_confirmation: "" }); // Update reset
+                setPasswordData({ new_password: "", new_password_confirmation: "" });
                 setPasswordErrors({});
             } else {
                 toast.error(response.message || "Gagal ubah password");
             }
         } catch (error) {
-            // Handle Laravel validation errors detail
             if (error.errors) {
                 const newErrors = {};
                 if (error.errors.new_password) newErrors.new_password = error.errors.new_password[0];
-                if (error.errors.new_password_confirmation) newErrors.new_password_confirmation = error.errors.new_password_confirmation[0]; // Update handle error
+                if (error.errors.new_password_confirmation) newErrors.new_password_confirmation = error.errors.new_password_confirmation[0];
                 setPasswordErrors(newErrors);
                 toast.error(error.errors.new_password?.[0] || error.errors.new_password_confirmation?.[0] || "Gagal ubah password");
             } else {
@@ -144,149 +148,47 @@ export default function Profile() {
     };
 
     if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (!profile) {
         return (
-            <div className="text-center py-16">
-                <p className="text-gray-600 dark:text-gray-400">Profil tidak ditemukan</p>
-            </div>
+            <UserLayout>
+                <div className="text-center py-16">
+                    <p className="text-gray-600 dark:text-gray-400">Profil tidak ditemukan</p>
+                </div>
+            </UserLayout>
         );
     }
 
     return (
         <UserLayout>
-            <div className="max-w-2xl mx-auto px-4 py-8">
-                {/* Header */}
-                <div className="flex items-center gap-4 mb-8">
-                    <User className="w-8 h-8 text-blue-600" />
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Profil Saya</h1>
-                </div>
+            <div className="max-w-4xl mx-auto px-4 py-8">
+                <ProfileHeader />
 
-                {/* Profile Info Form */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Informasi Pribadi</h2>
-                        <button
-                            onClick={handleEditToggle}
-                            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium transition"
-                        >
-                            {editing ? "Batal" : "Edit"}
-                            {editing ? <X className="w-4 h-4" /> : <Edit className="w-4 h-4" />}
-                        </button>
+                <div className="grid lg:grid-cols-2 gap-8">
+                    {/* Profile Information */}
+                    <div>
+                        <ProfileInfoCard
+                            profile={profile}
+                            editing={editing}
+                            saving={saving}
+                            onEditToggle={handleEditToggle}
+                            onProfileChange={handleProfileChange}
+                            onSave={handleSaveProfile}
+                        />
                     </div>
 
-                    <form onSubmit={handleSaveProfile} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Nama Lengkap
-                            </label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={profile.name || ""}
-                                onChange={handleProfileChange}
-                                disabled={!editing}
-                                required
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    editing ? "border-gray-300 dark:border-gray-600" : "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                                }`}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                <Mail className="w-4 h-4 inline mr-2" />
-                                Email
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={profile.email || ""}
-                                onChange={handleProfileChange}
-                                disabled={!editing}
-                                required
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    editing ? "border-gray-300 dark:border-gray-600" : "bg-gray-100 dark:bg-gray-600 cursor-not-allowed"
-                                }`}
-                            />
-                        </div>
-
-                        {editing && (
-                            <button
-                                type="submit"
-                                disabled={saving}
-                                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-2 rounded-lg transition font-semibold flex items-center justify-center gap-2"
-                            >
-                                <Save className="w-4 h-4" />
-                                {saving ? "Menyimpan..." : "Simpan Perubahan"}
-                            </button>
-                        )}
-                    </form>
-                </div>
-
-                {/* Change Password Form */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                        <Lock className="w-5 h-5" />
-                        Ubah Password
-                    </h2>
-
-                    <form onSubmit={handleChangePassword} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Password Baru
-                            </label>
-                            <input
-                                type="password"
-                                name="new_password"
-                                value={passwordData.new_password}
-                                onChange={handlePasswordChange}
-                                required
-                                minLength="8"
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    passwordErrors.new_password ? "border-red-500" : "border-gray-300 dark:border-gray-600"
-                                }`}
-                                placeholder="Password baru (min 8 char, huruf besar/kecil, angka)"
-                            />
-                            {passwordErrors.new_password && (
-                                <p className="text-red-500 text-xs mt-1">{passwordErrors.new_password}</p>
-                            )}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Konfirmasi Password Baru
-                            </label>
-                            <input
-                                type="password"
-                                name="new_password_confirmation" // Ubah nama input ke new_password_confirmation
-                                value={passwordData.new_password_confirmation}
-                                onChange={handlePasswordChange}
-                                required
-                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white ${
-                                    passwordErrors.new_password_confirmation ? "border-red-500" : "border-gray-300 dark:border-gray-600" // Update error key
-                                }`}
-                                placeholder="Konfirmasi password baru"
-                            />
-                            {passwordErrors.new_password_confirmation && ( // Update error display
-                                <p className="text-red-500 text-xs mt-1">{passwordErrors.new_password_confirmation}</p>
-                            )}
-                        </div>
-
-                        <button
-                            type="submit"
-                            disabled={Object.keys(passwordErrors).length > 0 || !passwordData.new_password || saving} // Update kondisi (gak ada confirm_password lagi)
-                            className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded-lg transition font-semibold"
-                        >
-                            Ubah Password
-                        </button>
-                    </form>
+                    {/* Change Password */}
+                    <div>
+                        <ChangePasswordCard
+                            passwordData={passwordData}
+                            passwordErrors={passwordErrors}
+                            onPasswordChange={handlePasswordChange}
+                            onChangePassword={handleChangePassword}
+                            saving={saving}
+                        />
+                    </div>
                 </div>
             </div>
         </UserLayout>
