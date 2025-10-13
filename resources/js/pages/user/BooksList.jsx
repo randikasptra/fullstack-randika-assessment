@@ -3,12 +3,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import NavbarUser from "../../components/user/NavbarUser";
-import {
-  fetchBooks,
-  fetchCategories,
-  fetchUser,
-  addToCart,
-} from "../../services/bookServices";
+import * as bookService from "../../services/user/bookService";
 
 const BooksList = () => {
   const [darkMode, setDarkMode] = useState(false);
@@ -38,20 +33,23 @@ const BooksList = () => {
       return;
     }
 
-    const getUser = async () => {
-      try {
-        const data = await fetchUser(token);
-        setUser(data);
-      } catch (err) {
-        console.error("❌ Gagal memuat user:", err);
-        toast.error("Sesi login berakhir. Silakan login ulang.");
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user");
-        navigate("/");
+    const loadUser = async () => {
+      const result = await bookService.fetchUser();
+      if (result.success) {
+        setUser(result.data);
+      } else {
+        if (result.unauthorized) {
+          toast.error("Sesi login berakhir. Silakan login ulang.");
+          localStorage.removeItem("auth_token");
+          localStorage.removeItem("user");
+          navigate("/");
+        } else {
+          console.error("❌ Gagal memuat user:", result.error);
+        }
       }
     };
 
-    getUser();
+    loadUser();
   }, [navigate, token]);
 
   // 🔹 Fetch buku dan kategori
@@ -64,15 +62,29 @@ const BooksList = () => {
 
     const loadData = async () => {
       try {
-        const [bookData, categoryData] = await Promise.all([
-          fetchBooks(token),
-          fetchCategories(token),
+        const [bookResult, categoryResult] = await Promise.all([
+          bookService.fetchBooks(),
+          bookService.fetchCategories(),
         ]);
-        setBooks(bookData);
-        setFilteredBooks(bookData);
-        setCategories(categoryData);
+
+        if (bookResult.success) {
+          setBooks(bookResult.data);
+          setFilteredBooks(bookResult.data);
+        } else {
+          toast.error(bookResult.error);
+        }
+
+        if (categoryResult.success) {
+          setCategories(categoryResult.data);
+        } else {
+          // Jika kategori tidak tersedia (403), tetap lanjutkan tanpa filter kategori
+          if (!categoryResult.needsPublicEndpoint) {
+            console.warn("Kategori tidak tersedia:", categoryResult.error);
+          }
+          setCategories([]);
+        }
       } catch (error) {
-        toast.error("Gagal memuat data buku atau kategori.");
+        toast.error("Gagal memuat data.");
       } finally {
         setLoading(false);
       }
@@ -88,7 +100,7 @@ const BooksList = () => {
       filtered = filtered.filter(
         (book) =>
           book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          book.author.toLowerCase().includes(searchTerm.toLowerCase())
+          (book.author && book.author.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     if (selectedCategory) {
@@ -101,21 +113,22 @@ const BooksList = () => {
 
   // 🔹 Tambah ke keranjang
   const handleAddToCart = async (bookId) => {
-    try {
-      await addToCart(bookId, token);
+    const result = await bookService.addToCart(bookId);
+    if (result.success) {
       toast.success("Buku ditambahkan ke keranjang!");
-    } catch (error) {
-      toast.error("Gagal menambahkan ke keranjang.");
+    } else {
+      toast.error(result.error);
     }
   };
 
   // 🔹 Checkout
   const handleCheckout = async (bookId) => {
-    try {
-      await handleAddToCart(bookId);
+    const result = await bookService.addToCart(bookId);
+    if (result.success) {
+      toast.success("Buku ditambahkan ke keranjang!");
       navigate("/checkout");
-    } catch (error) {
-      toast.error("Checkout gagal, coba lagi.");
+    } else {
+      toast.error(result.error);
     }
   };
 
@@ -148,18 +161,20 @@ const BooksList = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
           />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          >
-            <option value="">Semua Kategori</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+          {categories.length > 0 && (
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="">Semua Kategori</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Book Grid */}
