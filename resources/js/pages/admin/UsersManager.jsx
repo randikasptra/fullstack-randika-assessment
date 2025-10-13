@@ -1,11 +1,11 @@
-// js/pages/admin/UsersManager.jsx
+// resources/js/pages/admin/UsersManager.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 import UserTable from "../../components/admin/UserTable";
 import UserModal from "../../components/admin/UserModal";
 import SearchInput from "../../components/admin/SearchInput";
+import * as userService from "../../services/admin/userService";
 
 const UsersManager = () => {
     const [users, setUsers] = useState([]);
@@ -15,10 +15,8 @@ const UsersManager = () => {
     const [editUser, setEditUser] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
 
-    const token = localStorage.getItem("auth_token");
-
     useEffect(() => {
-        fetchUsers();
+        loadUsers();
     }, []);
 
     useEffect(() => {
@@ -31,15 +29,12 @@ const UsersManager = () => {
         setFilteredUsers(filtered);
     }, [users, searchTerm]);
 
-    const fetchUsers = async () => {
-        try {
-            const res = await axios.get("http://127.0.0.1:8000/api/users", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setUsers(Array.isArray(res.data) ? res.data : res.data.data || []);
-        } catch (error) {
-            console.error(error);
-            toast.error("Gagal memuat data user.");
+    const loadUsers = async () => {
+        const result = await userService.fetchUsers();
+        if (result.success) {
+            setUsers(result.data);
+        } else {
+            toast.error(result.error);
         }
     };
 
@@ -66,47 +61,36 @@ const UsersManager = () => {
 
     const handleDelete = async (id) => {
         if (!confirm("Yakin ingin menghapus user ini?")) return;
-        try {
-            await axios.delete(`http://127.0.0.1:8000/api/users/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+
+        const result = await userService.deleteUser(id);
+        if (result.success) {
             toast.success("User berhasil dihapus!");
-            fetchUsers();
-        } catch (error) {
-            toast.error("Gagal menghapus user.");
+            loadUsers();
+        } else {
+            toast.error(result.error);
         }
     };
 
     const handleSaveUser = async (formData) => {
-        try {
-            if (modalType === "edit" && editUser) {
-                await axios.put(
-                    `http://127.0.0.1:8000/api/users/${editUser.id}`,
-                    formData,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
+        let result;
+
+        if (modalType === "edit" && editUser) {
+            result = await userService.updateUser(editUser.id, formData);
+            if (result.success) {
                 toast.success("User berhasil diperbarui!");
-            } else {
-                await axios.post("http://127.0.0.1:8000/api/users", formData, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+            }
+        } else {
+            result = await userService.createUser(formData);
+            if (result.success) {
                 toast.success("User berhasil ditambahkan!");
             }
-            handleCloseModal();
-            fetchUsers();
-        } catch (error) {
-            console.error(error);
+        }
 
-            // 🟡 tampilkan pesan dari backend jika ada
-            if (
-                error.response &&
-                error.response.data &&
-                error.response.data.message
-            ) {
-                toast.error(error.response.data.message);
-            } else {
-                toast.error("Gagal menyimpan user.");
-            }
+        if (result.success) {
+            handleCloseModal();
+            loadUsers();
+        } else {
+            toast.error(result.error);
         }
     };
 
