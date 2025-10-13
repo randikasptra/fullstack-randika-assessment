@@ -7,6 +7,7 @@ import cartService from '../../services/user/cartService';
 import checkoutService from '../../services/user/checkoutService';
 import paymentService from '../../services/user/paymentService';
 import orderService from '../../services/user/orderService';
+import UserLayout from "../../layouts/UserLayout";
 
 
 export default function Checkout() {
@@ -87,6 +88,8 @@ export default function Checkout() {
     };
 
     return (
+    <UserLayout>
+
         <div className="max-w-7xl mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
                 Checkout
@@ -266,5 +269,7 @@ export default function Checkout() {
                 </div>
             </div>
         </div>
+    </UserLayout>
+
     );
 }

@@ -5,7 +5,6 @@ import cartService from "../../services/user/cartService";
 import { Search, ShoppingCart, BookOpen } from "lucide-react";
 import UserLayout from "../../layouts/UserLayout";
 
-
 export default function BooksList() {
     const [books, setBooks] = useState([]);
     const [filteredBooks, setFilteredBooks] = useState([]);
@@ -17,32 +16,32 @@ export default function BooksList() {
         loadBooks();
     }, []);
 
-   const loadBooks = async () => {
-    try {
-        setLoading(true);
-        const response = await bookService.getAllBooks();
+    const loadBooks = async () => {
+        try {
+            setLoading(true);
+            const response = await bookService.getAllBooks();
 
-        console.log('Full response:', response); // Debug
+            console.log("Full response:", response); // Debug
 
-        // Handle jika response adalah object dengan property data
-        let booksData = [];
-        if (response && typeof response === 'object') {
-            if (Array.isArray(response)) {
-                booksData = response;
-            } else if (response.data && Array.isArray(response.data)) {
-                booksData = response.data;
+            // Handle jika response adalah object dengan property data
+            let booksData = [];
+            if (response && typeof response === "object") {
+                if (Array.isArray(response)) {
+                    booksData = response;
+                } else if (response.data && Array.isArray(response.data)) {
+                    booksData = response.data;
+                }
             }
-        }
 
-        setBooks(booksData);
-        setFilteredBooks(booksData);
-    } catch (error) {
-        console.error("Error loading books:", error);
-        alert(error.message || "Gagal memuat buku");
-    } finally {
-        setLoading(false);
-    }
-};
+            setBooks(booksData);
+            setFilteredBooks(booksData);
+        } catch (error) {
+            console.error("Error loading books:", error);
+            alert(error.message || "Gagal memuat buku");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = (e) => {
         const query = e.target.value.toLowerCase();
@@ -66,6 +65,7 @@ export default function BooksList() {
             const response = await cartService.addToCart(bookId, 1);
             if (response.success) {
                 alert("Berhasil ditambahkan ke keranjang! 🛒");
+                navigate("/user/cart"); // Auto redirect ke halaman cart setelah sukses
             }
         } catch (error) {
             alert(error.message || "Gagal menambahkan ke keranjang");
