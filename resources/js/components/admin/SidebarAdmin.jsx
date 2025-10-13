@@ -83,7 +83,7 @@ const SidebarAdmin = () => {
             key: "orders",
             children: [
                 {
-                    path: "/admin/orders",
+                    path: "/admin/orders-list",
                     name: "Kelola Pesanan",
                     icon: <FaClipboardList />,
                     badge: "5" // jumlah pesanan pending

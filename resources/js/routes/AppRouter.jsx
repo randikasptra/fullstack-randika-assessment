@@ -8,6 +8,7 @@ import GoogleSuccess from "../pages/GoogleSuccess";
 
 // Import admin pages
 import DashboardAdmin from "../pages/admin/DashboardAdmin";
+import AdminOrders from "../pages/admin/AdminOrders";
 import BooksManager from "../pages/admin/BooksManager";
 import CategoryManager from "../pages/admin/CategoryManager";
 import UsersManager from "../pages/admin/UsersManager";
@@ -33,6 +34,7 @@ const AppRouter = () => {
 
                 {/* Admin Routes */}
                 <Route path="/admin/dashboard" element={<DashboardAdmin />} />
+                <Route path="/admin/orders-list" element={<AdminOrders />} />
                 <Route path="/admin/category-manager" element={<CategoryManager />} />
                 <Route path="/admin/users-manager" element={<UsersManager />} />
                 <Route path="/admin/books-manager" element={<BooksManager />} />

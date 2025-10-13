@@ -14,16 +14,15 @@ class Order extends Model
         'order_date',
         'status',
         'total_price',
-        'snap_token',
-        'payment_type',
-        'paid_at',
+        'snap_token', // Dari screenshot lu ada
     ];
 
     protected $casts = [
         'order_date' => 'datetime',
-        'paid_at' => 'datetime',
+        'total_price' => 'decimal:2',
     ];
 
+    // Relations
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -36,6 +35,6 @@ class Order extends Model
 
     public function shippingAddress()
     {
-        return $this->hasOne(ShippingAddress::class);
+        return $this->hasOne(ShippingAddress::class); // Asumsi model ShippingAddress ada
     }
 }
