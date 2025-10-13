@@ -149,11 +149,13 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
 Route::post('/payment/notification', [PaymentController::class, 'notification']);
 
 
-Route::middleware('auth:sanctum')->group(function () {
+// ============================================
+// 📚 USER BOOK ROUTES (Public untuk role:user)
+// ============================================
+Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function () {
     Route::get('/books', [BookUserController::class, 'index']);
     Route::get('/books/{id}', [BookUserController::class, 'show']);
 });
-
 
 
 
