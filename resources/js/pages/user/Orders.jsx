@@ -16,6 +16,7 @@ import {
     AlertCircle,
 } from "lucide-react";
 import orderService from "../../services/user/orderService";
+import { useOrderActions } from "../../services/user/useOrderActions";
 import UserLayout from "../../layouts/UserLayout";
 
 export default function Orders() {
@@ -23,6 +24,7 @@ export default function Orders() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("all");
     const navigate = useNavigate();
+    const { handleCancelOrder, handleConfirmOrder, handleDeleteOrder, loading: actionLoading } = useOrderActions();
 
     useEffect(() => {
         fetchOrders();
@@ -42,36 +44,24 @@ export default function Orders() {
         }
     };
 
-    const handleCancelOrder = async (orderId) => {
-        if (!confirm("Yakin ingin membatalkan pesanan ini?")) return;
-
-        try {
-            const response = await orderService.cancelOrder(orderId);
-            if (response.success) {
-                alert("Pesanan berhasil dibatalkan");
-                fetchOrders();
-            }
-        } catch (error) {
-            alert(error.message || "Gagal membatalkan pesanan");
+    const onCancelOrder = async (orderId) => {
+        const result = await handleCancelOrder(orderId);
+        if (result?.success) {
+            fetchOrders();
         }
     };
 
-    const handleDeleteOrder = async (orderId) => {
-        if (
-            !confirm(
-                "Hapus pesanan ini dari riwayat? Tindakan ini tidak dapat dibatalkan."
-            )
-        )
-            return;
+    const onConfirmOrder = async (orderId) => {
+        const result = await handleConfirmOrder(orderId);
+        if (result?.success) {
+            fetchOrders();
+        }
+    };
 
-        try {
-            const response = await orderService.deleteOrder(orderId);
-            if (response.success) {
-                alert("Pesanan berhasil dihapus dari riwayat");
-                fetchOrders();
-            }
-        } catch (error) {
-            alert(error.message || "Gagal menghapus pesanan");
+    const onDeleteOrder = async (orderId) => {
+        const result = await handleDeleteOrder(orderId);
+        if (result?.success) {
+            fetchOrders();
         }
     };
 
@@ -207,8 +197,9 @@ export default function Orders() {
                             Bayar Sekarang
                         </button>
                         <button
-                            onClick={() => handleCancelOrder(order.id)}
-                            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-medium transition-all"
+                            onClick={() => onCancelOrder(order.id)}
+                            disabled={actionLoading}
+                            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-medium transition-all disabled:opacity-50"
                         >
                             <XCircle className="w-4 h-4" />
                             Batalkan
@@ -228,8 +219,9 @@ export default function Orders() {
                             Lihat Pembayaran
                         </button>
                         <button
-                            onClick={() => handleCancelOrder(order.id)}
-                            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-medium transition-all"
+                            onClick={() => onCancelOrder(order.id)}
+                            disabled={actionLoading}
+                            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-medium transition-all disabled:opacity-50"
                         >
                             <XCircle className="w-4 h-4" />
                             Batalkan
@@ -246,8 +238,13 @@ export default function Orders() {
 
             case "shipped":
                 return (
-                    <button className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-xl font-medium transition-all">
-                        Lacak Pengiriman
+                    <button
+                        onClick={() => onConfirmOrder(order.id)}
+                        disabled={actionLoading}
+                        className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-xl font-medium transition-all disabled:opacity-50"
+                    >
+                        <CheckCircle className="w-4 h-4" />
+                        Pesanan Diterima
                     </button>
                 );
 
@@ -265,8 +262,9 @@ export default function Orders() {
             case "expired":
                 return (
                     <button
-                        onClick={() => handleDeleteOrder(order.id)}
-                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-medium transition-all"
+                        onClick={() => onDeleteOrder(order.id)}
+                        disabled={actionLoading}
+                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl font-medium transition-all disabled:opacity-50"
                     >
                         <Trash2 className="w-4 h-4" />
                         Hapus
