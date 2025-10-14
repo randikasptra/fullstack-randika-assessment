@@ -11,6 +11,7 @@ use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\PaymentController;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\BookUserController;
+use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
@@ -61,8 +62,8 @@ Route::get('/debug-env', function () {
 // ============================================
 // 🔓 PUBLIC ROUTES (No Authentication)
 // ============================================
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->name('register');  // <-- Tambah name kalau butuh
+Route::post('/login', [AuthController::class, 'login'])->name('login');  // <-- FIX: Tambah ->name('login') di sini
 Route::get('/auth/google/redirect', [AuthController::class, 'redirectToGoogle']);
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 
@@ -127,11 +128,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 
     // Admin Order Management
     Route::prefix('orders')->group(function () {
-        Route::get('/', [OrderController::class, 'adminIndex']); // Semua orders
-        Route::get('/stats', [OrderController::class, 'stats']); // Order statistics
-        Route::get('/{id}', [OrderController::class, 'adminShow']); // Detail order
-        Route::put('/{id}/status', [OrderController::class, 'updateStatus']); // Update status
-        Route::delete('/{id}', [OrderController::class, 'adminDestroy']); // Delete order
+        Route::get('/', [AdminOrderController::class, 'index']);
+        Route::get('/{id}', [AdminOrderController::class, 'show']);
+        Route::patch('/{id}/status', [AdminOrderController::class, 'updateStatus']);
+        Route::patch('/{id}/tracking-notes', [AdminOrderController::class, 'updateTrackingAndNotes']);
+        Route::delete('/{id}', [AdminOrderController::class, 'destroy']);
     });
 });
 
@@ -182,16 +183,6 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
         Route::delete('/{id}', [OrderController::class, 'destroy']); // Delete cancelled order
     });
 });
-Route::post('/user/simulate-expire/{id}', function ($id) {
-    $order = auth()->user()->orders()->findOrFail($id);
-    if ($order->status === 'pending') {
-        foreach ($order->orderItems as $item) {
-            $item->book->increment('stock', $item->quantity);
-        }
-        $order->update(['status' => 'cancelled']);
-        return response()->json(['success' => true, 'Stok +1!']);
-    }
-})->middleware('auth:sanctum');
 
 // ============================================
 // 📚 MEMBER ROUTES (Read Only - role: member)
@@ -206,4 +197,12 @@ Route::middleware(['auth:sanctum', 'role:member,admin,librarian'])->prefix('publ
 
     // Public Categories (Read only)
     Route::get('/categories', [CategoryController::class, 'publicIndex']);
+});
+
+Route::get('/test-admin', function (Request $request) {
+    return response()->json([
+        'authenticated' => auth()->check(),
+        'user' => auth()->user(),
+        'token_valid' => true
+    ]);
 });
