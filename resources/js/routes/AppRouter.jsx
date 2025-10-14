@@ -14,6 +14,7 @@ import CategoryManager from "../pages/admin/CategoryManager";
 import UsersManager from "../pages/admin/UsersManager";
 import SettingsAdmin from "../pages/admin/SettingsAdmin";
 import OrderDetailAdmin from "../pages/admin/OrderDetailAdmin";
+import TransactionHistory from "../pages/admin/TransactionHistory";
 
 // Import user pages
 import DashboardUser from "../pages/user/DashboardUser";
@@ -41,6 +42,7 @@ const AppRouter = () => {
                 <Route path="/admin/users-manager" element={<UsersManager />} />
                 <Route path="/admin/books-manager" element={<BooksManager />} />
                 <Route path="/admin/settings-admin" element={<SettingsAdmin />} />
+                <Route path="/admin/history-transaction" element={<TransactionHistory />} />
                 {/* Revisi di sini: Tambah :id untuk dynamic route */}
                 <Route path="/admin/detail-orders/:id" element={<OrderDetailAdmin />} />
 

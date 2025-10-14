@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\TransactionHistoryController;
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\CheckoutController;
@@ -116,9 +117,6 @@ Route::middleware(['auth:sanctum', 'role:admin,librarian'])->group(function () {
 // 👑 ADMIN ONLY ROUTES
 // ============================================
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
-
-
-
     // Admin Order Management
     Route::prefix('orders')->group(function () {
         Route::get('/', [AdminOrderController::class, 'index']);
@@ -128,10 +126,13 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::delete('/{id}', [AdminOrderController::class, 'destroy']);
     });
 });
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/transactions', [TransactionHistoryController::class, 'index']);
+    Route::get('/transactions/export', [TransactionHistoryController::class, 'export']);
+});
 
 
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-
     // Users Management (Only Admin)
     Route::get('/users', [UserController::class, 'index']);
     Route::post('/users', [UserController::class, 'store']);

@@ -90,7 +90,7 @@ const SidebarAdmin = () => {
                     badge: "5"
                 },
                 {
-                    path: "/admin/transactions",
+                    path: "/admin/history-transaction",
                     name: "Riwayat Transaksi",
                     icon: <FaMoneyBillWave />,
                 },
