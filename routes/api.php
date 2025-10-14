@@ -11,7 +11,9 @@ use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\PaymentController;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\User\BookUserController;
+use App\Events\StockUpdatedEvent;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
 
@@ -187,12 +189,14 @@ Route::post('/user/simulate-expire/{id}', function ($id) {
     if ($order->status === 'pending') {
         foreach ($order->orderItems as $item) {
             $item->book->increment('stock', $item->quantity);
+            \Log::info('Triggering StockUpdatedEvent for cancelled order', ['book_id' => $item->book->id, 'stock' => $item->book->stock]);
+            event(new StockUpdatedEvent($item->book));
         }
         $order->update(['status' => 'cancelled']);
-        return response()->json(['success' => true, 'Stok +1!']);
+        return response()->json(['success' => true, 'message' => 'Order cancelled, stock restored']);
     }
+    return response()->json(['message' => 'Order cannot be cancelled'], 400);
 })->middleware('auth:sanctum');
-
 // ============================================
 // 📚 MEMBER ROUTES (Read Only - role: member)
 // ============================================
@@ -207,3 +211,6 @@ Route::middleware(['auth:sanctum', 'role:member,admin,librarian'])->prefix('publ
     // Public Categories (Read only)
     Route::get('/categories', [CategoryController::class, 'publicIndex']);
 });
+
+
+Broadcast::routes();

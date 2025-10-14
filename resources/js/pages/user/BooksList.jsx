@@ -1,8 +1,9 @@
+// resources/js/pages/users/BooksList.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bookService from "../../services/user/bookService";
 import cartService from "../../services/user/cartService";
-import { Search, ShoppingCart, BookOpen, Tag, Filter, ChevronDown } from "lucide-react";  // Tambah Filter & ChevronDown
+import { Search, ShoppingCart, BookOpen, Tag, Filter } from "lucide-react";
 import UserLayout from "../../layouts/UserLayout";
 
 export default function BooksList() {
@@ -10,82 +11,107 @@ export default function BooksList() {
     const [filteredBooks, setFilteredBooks] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-
-    // Filter states
+    const [categories, setCategories] = useState([]);
     const [selectedCategory, setSelectedCategory] = useState("all");
     const [minPrice, setMinPrice] = useState(0);
-    const [maxPrice, setMaxPrice] = useState(1000000);  // Default max Rp 1jt
-    const [sortBy, setSortBy] = useState("newest");  // newest, price_low, price_high, name
-
-    // Unique categories dari books
-    const [categories, setCategories] = useState([]);
+    const [maxPrice, setMaxPrice] = useState(1000000);
+    const [sortBy, setSortBy] = useState("newest");
+    const navigate = useNavigate();
 
     useEffect(() => {
+        let isMounted = true;
+
+        const loadBooks = async () => {
+            try {
+                setLoading(true);
+                const response = await bookService.getAllBooks();
+                const booksData = Array.isArray(response) ? response : response.data || [];
+
+                if (isMounted) {
+                    setBooks(booksData);
+                    setFilteredBooks(booksData);
+                    const uniqueCats = [...new Set(booksData.map(book => book.category?.name).filter(name => name))];
+                    setCategories(uniqueCats);
+                }
+            } catch (error) {
+                if (isMounted) {
+                    console.error("Error loading books:", error);
+                    alert(error.message || "Gagal memuat buku");
+                }
+            } finally {
+                if (isMounted) setLoading(false);
+            }
+        };
+
         loadBooks();
+
+        return () => {
+            isMounted = false;
+            if (window.Echo) {
+                books.forEach(book => {
+                    window.Echo.leaveChannel(`products.${book.id}`);
+                });
+            }
+        };
     }, []);
 
     useEffect(() => {
-        applyFilters();
-    }, [searchQuery, selectedCategory, minPrice, maxPrice, sortBy]);
+        if (!books.length || !window.Echo) return;
 
-    const loadBooks = async () => {
-        try {
-            setLoading(true);
-            const response = await bookService.getAllBooks();
+        let retryCount = 0;
+        const maxRetries = 5;
 
-            console.log("Full response:", response); // Debug
-
-            // Handle jika response adalah object dengan property data
-            let booksData = [];
-            if (response && typeof response === "object") {
-                if (Array.isArray(response)) {
-                    booksData = response;
-                } else if (response.data && Array.isArray(response.data)) {
-                    booksData = response.data;
-                }
+        const setupWebSocket = () => {
+            if (window.Echo.connector.pusher.connection.state === 'connected') {
+                books.forEach(book => {
+                    window.Echo.channel(`products.${book.id}`)
+                        .listen('.stock.updated', (data) => {
+                            setBooks(prevBooks =>
+                                prevBooks.map(b =>
+                                    b.id === data.id ? { ...b, stock: data.stock } : b
+                                )
+                            );
+                            console.log(`Stock updated for ${data.title}: ${data.stock}`);
+                        });
+                    console.log(`Subscribed to channel products.${book.id}`);
+                });
+            } else if (retryCount < maxRetries) {
+                retryCount++;
+                console.warn(`WebSocket not connected. Retrying (${retryCount}/${maxRetries})...`);
+                setTimeout(setupWebSocket, 1000);
+            } else {
+                console.error('Failed to connect to WebSocket after max retries');
             }
+        };
 
-            setBooks(booksData);
+        setupWebSocket();
 
-            // Extract unique categories
-            const uniqueCats = [...new Set(booksData.map(book => book.category?.name).filter(name => name))];
-            setCategories(uniqueCats);
+        return () => {
+            if (window.Echo) {
+                books.forEach(book => {
+                    window.Echo.leaveChannel(`products.${book.id}`);
+                });
+            }
+        };
+    }, [books]);
 
-            setFilteredBooks(booksData);
-        } catch (error) {
-            console.error("Error loading books:", error);
-            alert(error.message || "Gagal memuat buku");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const applyFilters = () => {
+    useEffect(() => {
         let filtered = [...books];
-
-        // Search filter
         if (searchQuery) {
             filtered = filtered.filter(
                 (book) =>
-                    book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    book.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     book.publisher?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     book.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
-
-        // Category filter
         if (selectedCategory !== "all") {
             filtered = filtered.filter(book => book.category?.name === selectedCategory);
         }
-
-        // Price filter
         filtered = filtered.filter(book =>
             (book.price || 0) >= minPrice && (book.price || 0) <= maxPrice
         );
-
-        // Sort
         switch (sortBy) {
             case "price_low":
                 filtered.sort((a, b) => (a.price || 0) - (b.price || 0));
@@ -101,9 +127,8 @@ export default function BooksList() {
                 filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
                 break;
         }
-
         setFilteredBooks(filtered);
-    };
+    }, [books, searchQuery, selectedCategory, minPrice, maxPrice, sortBy]);
 
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
@@ -124,7 +149,6 @@ export default function BooksList() {
     const handleBuyNow = (bookId) => {
         const book = filteredBooks.find((b) => b.id === bookId);
         if (!book) return;
-
         navigate("/user/checkout", {
             state: {
                 buyNow: true,
@@ -147,7 +171,6 @@ export default function BooksList() {
     return (
         <UserLayout>
             <div className="max-w-7xl mx-auto px-4 py-8">
-                {/* Header */}
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-3">
                         <BookOpen className="w-8 h-8 text-blue-600" />
@@ -163,16 +186,12 @@ export default function BooksList() {
                         Keranjang
                     </button>
                 </div>
-
                 <div className="md:flex gap-8">
-                    {/* Filter Sidebar */}
                     <div className="w-full md:w-64 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 md:mb-0 sticky top-4">
                         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <Filter className="w-5 h-5" />
                             Filter
                         </h2>
-
-                        {/* Category Filter */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Kategori
@@ -188,8 +207,6 @@ export default function BooksList() {
                                 ))}
                             </select>
                         </div>
-
-                        {/* Price Range Filter */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Harga (Rp)
@@ -211,8 +228,6 @@ export default function BooksList() {
                                 />
                             </div>
                         </div>
-
-                        {/* Sort By */}
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Urutkan
@@ -228,8 +243,6 @@ export default function BooksList() {
                                 <option value="name">Nama A-Z</option>
                             </select>
                         </div>
-
-                        {/* Reset & Apply Buttons */}
                         <div className="flex gap-2">
                             <button
                                 onClick={resetFilters}
@@ -238,17 +251,14 @@ export default function BooksList() {
                                 Reset
                             </button>
                             <button
-                                onClick={() => applyFilters()}  // Manual apply kalau mau, tapi auto via useEffect
+                                onClick={() => setFilteredBooks([...books])}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition text-sm"
                             >
                                 Terapkan
                             </button>
                         </div>
                     </div>
-
-                    {/* Main Content */}
                     <div className="flex-1">
-                        {/* Search */}
                         <div className="mb-6">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -261,8 +271,6 @@ export default function BooksList() {
                                 />
                             </div>
                         </div>
-
-                        {/* Books Grid */}
                         <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
                             <span>Ditemukan {filteredBooks.length} buku</span>
                         </div>
@@ -304,16 +312,12 @@ export default function BooksList() {
                                                 {book.publisher || "Tidak diketahui"}{" "}
                                                 {book.year ? `(${book.year})` : ""}
                                             </p>
-
-                                            {/* Tambah Category Badge */}
                                             {book.category && book.category.name && (
                                                 <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 mb-2">
                                                     <Tag className="w-3 h-3" />
                                                     <span>Kategori: {book.category.name}</span>
                                                 </div>
                                             )}
-
-                                            {/* Stock */}
                                             <p
                                                 className={`text-sm font-medium mb-2 ${
                                                     book.stock > 0
@@ -325,22 +329,16 @@ export default function BooksList() {
                                                     ? `Stok tersedia: ${book.stock}`
                                                     : "Stok habis"}
                                             </p>
-
-                                            {/* Price */}
                                             <p className="font-bold text-green-700 text-lg mb-3">
                                                 Rp{" "}
                                                 {book.price
                                                     ? book.price.toLocaleString("id-ID")
                                                     : "0"}
                                             </p>
-
-                                            {/* Description */}
                                             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                                                 {book.description ||
                                                     "Tidak ada deskripsi."}
                                             </p>
-
-                                            {/* Buttons */}
                                             <div className="space-y-2">
                                                 <button
                                                     onClick={() =>
