@@ -1,5 +1,6 @@
+// resources/js/services/user/orderService.js
 import axios from 'axios';
-import { API_BASE_URL } from '../../../config/api'; // Import ini kalo belum ada
+import { API_BASE_URL } from '../../../config/api';
 
 const getAuthToken = () => {
     return localStorage.getItem("auth_token");
@@ -45,6 +46,17 @@ const orderService = {
             return response.data;
         } catch (error) {
             console.error('Cancel order error:', error.response?.data || error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // ✅ Delete order (for cancelled orders only)
+    deleteOrder: async (orderId) => {
+        try {
+            const response = await axios.delete(`${API_URL}/${orderId}`, { headers: getAuthHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Delete order error:', error.response?.data || error);
             throw error.response?.data || error;
         }
     },

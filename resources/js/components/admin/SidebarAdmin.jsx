@@ -17,7 +17,7 @@ import {
     FaChevronDown,
     FaChevronRight,
 } from "react-icons/fa";
-import { logoutUser } from "../../utils/logout";  // Pastiin file ini ada!
+import { logoutUser } from "../../utils/logout";
 
 const SidebarAdmin = () => {
     const location = useLocation();

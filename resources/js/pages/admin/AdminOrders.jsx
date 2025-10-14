@@ -1,68 +1,47 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React from "react";
 import { Search, Filter, Eye, XCircle, CheckCircle, Clock, Truck } from "lucide-react";
 import { FaClipboardList } from "react-icons/fa";
-import adminOrderService from "../../services/admin/adminOrderService";
 import AdminLayout from "../../layouts/AdminLayout";
 
 export default function AdminOrders() {
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        fetchOrders();
-    }, [search, statusFilter, currentPage]);
-
-    const fetchOrders = async () => {
-        try {
-            setLoading(true);
-            const params = { search, status: statusFilter, page: currentPage };
-            const response = await adminOrderService.getOrders(params);
-            console.log('API Response:', response); // Debug: Cek ini di console
-            if (response.success) {
-                setOrders(response.data.data || []); // Laravel paginate: response.data.data = array items
-                setTotalPages(response.data.last_page || 1);
-            }
-        } catch (error) {
-            console.error("Error fetching orders:", error);
-            alert(error.message || "Gagal memuat pesanan");
-        } finally {
-            setLoading(false);
+    // Data statis sample
+    const orders = [
+        {
+            id: 1,
+            user: { name: "John Doe", email: "john@example.com" },
+            order_date: "2025-10-01T10:00:00Z",
+            total_price: 150000,
+            status: "pending"
+        },
+        {
+            id: 2,
+            user: { name: "Jane Smith", email: "jane@example.com" },
+            order_date: "2025-10-05T14:30:00Z",
+            total_price: 250000,
+            status: "paid"
+        },
+        {
+            id: 3,
+            user: { name: "Bob Johnson", email: "bob@example.com" },
+            order_date: "2025-10-10T09:15:00Z",
+            total_price: 180000,
+            status: "shipped"
+        },
+        {
+            id: 4,
+            user: { name: "Alice Brown", email: "alice@example.com" },
+            order_date: "2025-10-12T16:45:00Z",
+            total_price: 300000,
+            status: "completed"
+        },
+        {
+            id: 5,
+            user: { name: "Charlie Wilson", email: "charlie@example.com" },
+            order_date: "2025-10-13T11:20:00Z",
+            total_price: 120000,
+            status: "cancelled"
         }
-    };
-
-    const handleStatusUpdate = async (orderId, newStatus) => {
-        if (!confirm(`Ubah status ke "${newStatus}"?`)) return;
-
-        try {
-            const response = await adminOrderService.updateStatus(orderId, newStatus);
-            if (response.success) {
-                alert("Status berhasil diupdate!");
-                fetchOrders();
-            }
-        } catch (error) {
-            alert(error.message || "Gagal update status");
-        }
-    };
-
-    const handleCancel = async (orderId) => {
-        if (!confirm("Batalkan pesanan ini?")) return;
-
-        try {
-            const response = await adminOrderService.cancelOrder(orderId);
-            if (response.success) {
-                alert("Pesanan berhasil dibatalkan!");
-                fetchOrders();
-            }
-        } catch (error) {
-            alert(error.message || "Gagal membatalkan");
-        }
-    };
+    ];
 
     const getStatusBadge = (status) => {
         const badges = {
@@ -91,14 +70,6 @@ export default function AdminOrders() {
         { value: "cancelled", label: "Cancelled" },
     ];
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
     return (
         <AdminLayout>
             <div className="max-w-7xl mx-auto px-4 py-8">
@@ -113,22 +84,20 @@ export default function AdminOrders() {
                     <div className="text-sm font-medium text-blue-600">Total: {orders.length} pesanan</div>
                 </div>
 
-                {/* Search & Filter */}
+                {/* Search & Filter - Statis, tidak berfungsi */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 mb-6 flex flex-wrap gap-4 items-center">
                     <div className="relative flex-1 min-w-64">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                             type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
                             placeholder="Cari ID order, nama user, atau email..."
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            readOnly
                         />
                     </div>
                     <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
                         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                        disabled
                     >
                         {statusOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -137,8 +106,8 @@ export default function AdminOrders() {
                         ))}
                     </select>
                     <button
-                        onClick={fetchOrders}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition opacity-50 cursor-not-allowed"
+                        disabled
                     >
                         <Filter className="w-4 h-4 inline mr-1" />
                         Filter
@@ -188,16 +157,16 @@ export default function AdminOrders() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                                 <button
-                                                    onClick={() => navigate(`/admin/orders/${order.id}`)}
-                                                    className="text-blue-600 hover:text-blue-900"
+                                                    className="text-blue-600 hover:text-blue-900 cursor-not-allowed opacity-50"
+                                                    disabled
                                                 >
                                                     <Eye className="w-4 h-4 inline" />
                                                 </button>
                                                 {order.status !== 'cancelled' && (
                                                     <select
                                                         value={order.status}
-                                                        onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
                                                         className="text-xs border rounded px-2 py-1 bg-white dark:bg-gray-700"
+                                                        disabled
                                                     >
                                                         <option value="pending">Pending</option>
                                                         <option value="paid">Paid</option>
@@ -208,8 +177,8 @@ export default function AdminOrders() {
                                                 )}
                                                 {order.status !== 'cancelled' && (
                                                     <button
-                                                        onClick={() => handleCancel(order.id)}
-                                                        className="text-red-600 hover:text-red-900"
+                                                        className="text-red-600 hover:text-red-900 cursor-not-allowed opacity-50"
+                                                        disabled
                                                     >
                                                         <XCircle className="w-4 h-4 inline" />
                                                     </button>
@@ -221,24 +190,22 @@ export default function AdminOrders() {
                             </table>
                         </div>
 
-                        {/* Pagination */}
+                        {/* Pagination - Statis */}
                         <div className="flex items-center justify-between mt-6">
                             <div className="text-sm text-gray-700 dark:text-gray-300">
-                                Menampilkan {((currentPage - 1) * 10) + 1} sampai {Math.min(currentPage * 10, orders.length)} dari {totalPages * 10} hasil
+                                Menampilkan 1 sampai 5 dari 5 hasil
                             </div>
                             <div className="flex space-x-2">
                                 <button
-                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-2 border rounded disabled:opacity-50"
+                                    className="px-3 py-2 border rounded opacity-50 cursor-not-allowed"
+                                    disabled
                                 >
                                     Sebelumnya
                                 </button>
-                                <span className="px-3 py-2">Halaman {currentPage} dari {totalPages}</span>
+                                <span className="px-3 py-2">Halaman 1 dari 1</span>
                                 <button
-                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-2 border rounded disabled:opacity-50"
+                                    className="px-3 py-2 border rounded opacity-50 cursor-not-allowed"
+                                    disabled
                                 >
                                     Selanjutnya
                                 </button>

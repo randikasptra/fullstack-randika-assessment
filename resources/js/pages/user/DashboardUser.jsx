@@ -34,14 +34,6 @@ export default function DashboardUser() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
     return (
         <UserLayout>
             <div className="max-w-7xl mx-auto px-4 py-8">
@@ -62,7 +54,7 @@ export default function DashboardUser() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Pesanan</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {data.statistics.total_orders}
+                                    {loading ? "..." : data.statistics.total_orders || 0}
                                 </p>
                             </div>
                             <Package className="w-8 h-8 text-blue-600" />
@@ -74,7 +66,7 @@ export default function DashboardUser() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Pengeluaran</p>
                                 <p className="text-2xl font-bold text-green-600">
-                                    Rp {data.statistics.total_spending?.toLocaleString("id-ID") || 0}
+                                    Rp {(loading ? 0 : data.statistics.total_spending || 0)?.toLocaleString("id-ID")}
                                 </p>
                             </div>
                             <BarChart3 className="w-8 h-8 text-green-600" />
@@ -86,7 +78,7 @@ export default function DashboardUser() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Item di Keranjang</p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {data.statistics.cart_items_count}
+                                    {loading ? "..." : data.statistics.cart_items_count || 0}
                                 </p>
                             </div>
                             <ShoppingCart className="w-8 h-8 text-orange-600" />
@@ -98,7 +90,7 @@ export default function DashboardUser() {
                             <div>
                                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pesanan Berbayar</p>
                                 <p className="text-2xl font-bold text-purple-600">
-                                    {data.statistics.paid_orders}
+                                    {loading ? "..." : data.statistics.paid_orders || 0}
                                 </p>
                             </div>
                             <TrendingUp className="w-8 h-8 text-purple-600" />
@@ -114,7 +106,7 @@ export default function DashboardUser() {
                             <BarChart3 className="w-5 h-5 text-blue-600" />
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pengeluaran Bulanan (6 Bulan Terakhir)</h2>
                         </div>
-                        {data.monthly_spending.length > 0 ? (
+                        {loading || data.monthly_spending.length > 0 ? (
                             <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                                 <thead className="text-xs text-gray-700 uppercase dark:text-gray-300 bg-gray-50 dark:bg-gray-700">
                                     <tr>
@@ -123,14 +115,23 @@ export default function DashboardUser() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {data.monthly_spending.map((month, index) => (
-                                        <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                            <td className="px-4 py-2 font-medium">{month.month}</td>
-                                            <td className="px-4 py-2 text-right text-green-600 font-semibold">
-                                                {parseInt(month.total).toLocaleString("id-ID")}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {loading ? (
+                                        Array.from({ length: 6 }).map((_, index) => (
+                                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                                <td className="px-4 py-2 font-medium">Memuat...</td>
+                                                <td className="px-4 py-2 text-right text-green-600 font-semibold">Rp 0</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        data.monthly_spending.map((month, index) => (
+                                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                                <td className="px-4 py-2 font-medium">{month.month}</td>
+                                                <td className="px-4 py-2 text-right text-green-600 font-semibold">
+                                                    {parseInt(month.total).toLocaleString("id-ID")}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         ) : (
@@ -153,21 +154,21 @@ export default function DashboardUser() {
                             </button>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            {data.suggested_books.slice(0, 4).map((book) => (
-                                <div key={book.id} className="text-center">
+                            {(loading ? Array.from({ length: 4 }) : data.suggested_books.slice(0, 4)).map((book, index) => (
+                                <div key={book?.id || index} className="text-center">
                                     <img
-                                        src={book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"}
-                                        alt={book.title}
-                                        className="w-full h-32 object-cover rounded-lg mb-2"
+                                        src={loading ? "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f" : (book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f")}
+                                        alt={book?.title || "Loading..."}
+                                        className="w-full h-32 object-cover rounded-lg mb-2 bg-gray-200"
                                     />
                                     <h3 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">
-                                        {book.title}
+                                        {loading ? "Memuat..." : book.title}
                                     </h3>
                                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                        {book.author}
+                                        {loading ? "" : book.author}
                                     </p>
                                     <p className="text-sm font-bold text-green-600">
-                                        Rp {book.price.toLocaleString("id-ID")}
+                                        {loading ? "Rp 0" : `Rp ${book.price.toLocaleString("id-ID")}`}
                                     </p>
                                 </div>
                             ))}
@@ -183,20 +184,20 @@ export default function DashboardUser() {
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">Buku Favorit Anda</h2>
                         </div>
                     </div>
-                    {data.popular_books.length > 0 ? (
+                    {loading || data.popular_books.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {data.popular_books.map((book) => (
-                                <div key={book.id} className="text-center">
+                            {(loading ? Array.from({ length: 5 }) : data.popular_books).map((book, index) => (
+                                <div key={book?.id || index} className="text-center">
                                     <img
-                                        src={book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"}
-                                        alt={book.title}
-                                        className="w-full h-32 object-cover rounded-lg mb-2"
+                                        src={loading ? "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f" : (book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f")}
+                                        alt={book?.title || "Loading..."}
+                                        className="w-full h-32 object-cover rounded-lg mb-2 bg-gray-200"
                                     />
                                     <h3 className="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2">
-                                        {book.title}
+                                        {loading ? "Memuat..." : book.title}
                                     </h3>
                                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                        Dibeli {book.total_purchased}x
+                                        {loading ? "" : `Dibeli ${book.total_purchased}x`}
                                     </p>
                                 </div>
                             ))}

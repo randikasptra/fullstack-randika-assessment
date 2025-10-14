@@ -17,7 +17,7 @@ export default function Checkout() {
 
     const [cartItems, setCartItems] = useState([]);
     const [total, setTotal] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const [formData, setFormData] = useState({
         recipient_name: '',
@@ -29,16 +29,17 @@ export default function Checkout() {
     });
 
     useEffect(() => {
+        setLoading(true);
         if (isBuyNow) {
             setCartItems([buyNowData]);
             setTotal(buyNowData.book.price * buyNowData.quantity);
+            setLoading(false);
         } else if (fromCartSelected && selectedCartItems) {
-            // Handle selected items from cart checkbox
             setCartItems(selectedCartItems);
             setTotal(location.state.total || 0);
+            setLoading(false);
         } else {
-            // Fallback to full cart
-            fetchCart();
+            fetchCart().finally(() => setLoading(false));
         }
     }, [isBuyNow, buyNowData, fromCartSelected, selectedCartItems, location.state]);
 
@@ -102,25 +103,37 @@ export default function Checkout() {
         }
     };
 
+    // Placeholder cart items for skeleton
+    const placeholderItems = Array.from({ length: 2 }).map((_, index) => ({
+        id: `placeholder-${index}`,
+        book: {
+            title: "Memuat...",
+            image_url: ""
+        },
+        quantity: 1
+    }));
+
+    const displayItems = loading ? placeholderItems : cartItems;
+
     return (
         <UserLayout>
             <div className="max-w-7xl mx-auto px-4 py-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
+                <h1 className={`text-3xl font-bold ${loading ? 'text-gray-300 animate-pulse' : 'text-gray-900 dark:text-white'} mb-8`}>
                     Checkout
                 </h1>
 
                 <div className="grid lg:grid-cols-3 gap-8">
                     {/* Form Pengiriman */}
                     <div className="lg:col-span-2">
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                        <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 ${loading ? 'animate-pulse' : ''}`}>
+                            <h2 className={`text-xl font-bold ${loading ? 'text-gray-300' : 'text-gray-900 dark:text-white'} mb-6`}>
                                 Alamat Pengiriman
                             </h2>
 
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className={`space-y-4 ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        <User className="w-4 h-4 inline mr-2" />
+                                    <label className={`block text-sm font-medium ${loading ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-2`}>
+                                        <User className={`w-4 h-4 inline mr-2 ${loading ? 'text-gray-300' : ''}`} />
                                         Nama Penerima
                                     </label>
                                     <input
@@ -129,14 +142,15 @@ export default function Checkout() {
                                         value={formData.recipient_name}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        placeholder="Masukkan nama penerima"
+                                        disabled={loading}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 dark:text-white ${loading ? 'bg-gray-200 border-gray-300 dark:border-gray-600' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700'}`}
+                                        placeholder={loading ? "" : "Masukkan nama penerima"}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        <Phone className="w-4 h-4 inline mr-2" />
+                                    <label className={`block text-sm font-medium ${loading ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-2`}>
+                                        <Phone className={`w-4 h-4 inline mr-2 ${loading ? 'text-gray-300' : ''}`} />
                                         Nomor Telepon
                                     </label>
                                     <input
@@ -145,14 +159,15 @@ export default function Checkout() {
                                         value={formData.phone}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        placeholder="08xxxxxxxxxx"
+                                        disabled={loading}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 dark:text-white ${loading ? 'bg-gray-200 border-gray-300 dark:border-gray-600' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700'}`}
+                                        placeholder={loading ? "" : "08xxxxxxxxxx"}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        <Home className="w-4 h-4 inline mr-2" />
+                                    <label className={`block text-sm font-medium ${loading ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-2`}>
+                                        <Home className={`w-4 h-4 inline mr-2 ${loading ? 'text-gray-300' : ''}`} />
                                         Alamat Lengkap
                                     </label>
                                     <textarea
@@ -161,14 +176,15 @@ export default function Checkout() {
                                         onChange={handleChange}
                                         required
                                         rows="3"
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        placeholder="Jalan, RT/RW, Kelurahan, Kecamatan"
+                                        disabled={loading}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 dark:text-white ${loading ? 'bg-gray-200 border-gray-300 dark:border-gray-600' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700'}`}
+                                        placeholder={loading ? "" : "Jalan, RT/RW, Kelurahan, Kecamatan"}
                                     />
                                 </div>
 
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <label className={`block text-sm font-medium ${loading ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-2`}>
                                             Kota/Kabupaten
                                         </label>
                                         <input
@@ -177,13 +193,14 @@ export default function Checkout() {
                                             value={formData.city}
                                             onChange={handleChange}
                                             required
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            placeholder="Contoh: Jakarta Selatan"
+                                            disabled={loading}
+                                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 dark:text-white ${loading ? 'bg-gray-200 border-gray-300 dark:border-gray-600' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700'}`}
+                                            placeholder={loading ? "" : "Contoh: Jakarta Selatan"}
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <label className={`block text-sm font-medium ${loading ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-2`}>
                                             Provinsi
                                         </label>
                                         <input
@@ -192,15 +209,16 @@ export default function Checkout() {
                                             value={formData.province}
                                             onChange={handleChange}
                                             required
-                                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                            placeholder="Contoh: DKI Jakarta"
+                                            disabled={loading}
+                                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 dark:text-white ${loading ? 'bg-gray-200 border-gray-300 dark:border-gray-600' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700'}`}
+                                            placeholder={loading ? "" : "Contoh: DKI Jakarta"}
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        <MapPin className="w-4 h-4 inline mr-2" />
+                                    <label className={`block text-sm font-medium ${loading ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'} mb-2`}>
+                                        <MapPin className={`w-4 h-4 inline mr-2 ${loading ? 'text-gray-300' : ''}`} />
                                         Kode Pos
                                     </label>
                                     <input
@@ -210,8 +228,9 @@ export default function Checkout() {
                                         onChange={handleChange}
                                         required
                                         maxLength="5"
-                                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                                        placeholder="12345"
+                                        disabled={loading}
+                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 dark:text-white ${loading ? 'bg-gray-200 border-gray-300 dark:border-gray-600' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700'}`}
+                                        placeholder={loading ? "" : "12345"}
                                     />
                                 </div>
 
@@ -228,30 +247,42 @@ export default function Checkout() {
 
                     {/* Order Summary */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 sticky top-4">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                        <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 sticky top-4 ${loading ? 'animate-pulse' : ''}`}>
+                            <h2 className={`text-xl font-bold ${loading ? 'text-gray-300' : 'text-gray-900 dark:text-white'} mb-4`}>
                                 Ringkasan Pesanan
                             </h2>
 
                             <div className="space-y-3 mb-6">
-                                {isBuyNow ? (
-                                    <div className="flex gap-3 pb-3 border-b">
-                                        <img
-                                            src={buyNowData.book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"}
-                                            alt={buyNowData.book.title}
-                                            className="w-16 h-20 object-cover rounded"
-                                        />
-                                        <div className="flex-1">
-                                            <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
-                                                {buyNowData.book.title}
-                                            </h3>
-                                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                                                {buyNowData.quantity} x Rp {buyNowData.book.price.toLocaleString('id-ID')}
-                                            </p>
+                                {loading || isBuyNow ? (
+                                    loading ? (
+                                        displayItems.map((item, index) => (
+                                            <div key={index} className="flex gap-3 pb-3 border-b">
+                                                <div className="w-16 h-20 bg-gray-200 rounded"></div>
+                                                <div className="flex-1 space-y-1">
+                                                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="flex gap-3 pb-3 border-b">
+                                            <img
+                                                src={buyNowData.book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"}
+                                                alt={buyNowData.book.title}
+                                                className="w-16 h-20 object-cover rounded"
+                                            />
+                                            <div className="flex-1">
+                                                <h3 className="font-semibold text-sm text-gray-900 dark:text-white">
+                                                    {buyNowData.book.title}
+                                                </h3>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                    {buyNowData.quantity} x Rp {buyNowData.book.price.toLocaleString('id-ID')}
+                                                </p>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )
                                 ) : (
-                                    cartItems.map((item) => (
+                                    displayItems.map((item) => (
                                         <div key={item.id} className="flex gap-3 pb-3 border-b">
                                             <img
                                                 src={item.book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"}
@@ -271,9 +302,9 @@ export default function Checkout() {
                                 )}
 
                                 <div className="pt-3">
-                                    <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
+                                    <div className={`flex justify-between text-lg font-bold ${loading ? 'text-gray-300' : 'text-gray-900 dark:text-white'}`}>
                                         <span>Total</span>
-                                        <span className="text-green-700">
+                                        <span className={loading ? 'text-gray-300' : "text-green-700"}>
                                             Rp {total.toLocaleString('id-ID')}
                                         </span>
                                     </div>
