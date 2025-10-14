@@ -12,6 +12,7 @@ export default function Payment() {
     const [snapToken, setSnapToken] = useState(null);
     const [statusPolling, setStatusPolling] = useState(null);
     const [pollInterval, setPollInterval] = useState(null);
+    const [paymentSuccess, setPaymentSuccess] = useState(false); // Flag to track success alert
 
     useEffect(() => {
         initializePayment();
@@ -26,7 +27,7 @@ export default function Payment() {
             await loadSnapScript();
             await getPaymentToken();
 
-            // Polling status setiap 10 detik (fallback detect expired)
+            // Polling status every 10 seconds (fallback detect expired)
             const interval = setInterval(async () => {
                 try {
                     const statusResponse = await paymentService.getOrderDetail(orderId);
@@ -35,10 +36,8 @@ export default function Payment() {
                         clearInterval(interval);
                         if (statusResponse.data.status === 'cancelled' || statusResponse.data.status === 'expired') {
                             alert("Pembayaran expired/cancelled. Stok otomatis dikembalikan! Bayar ulang yuk.");
-                        } else if (statusResponse.data.status === 'paid') {
-                            alert("Pembayaran berhasil! ✅");
-                            navigate("/user/orders");
                         }
+                        // No alert for 'paid' here, handled by onSuccess
                     }
                 } catch (error) {
                     console.error('Polling error:', error);
@@ -96,24 +95,26 @@ export default function Payment() {
                     throw new Error('Midtrans Snap belum siap—coba refresh');
                 }
 
-                // Auto trigger Snap (tanpa origin—unsupported!)
+                // Auto trigger Snap
                 console.log('Triggering snap.pay...');
                 window.snap.pay(response.snap_token, {
-                    // Config supported: callbacks & optional params
                     onSuccess: async function (result) {
                         console.log('✅ Payment success:', result);
-                        try {
-                            await paymentService.updatePaymentStatus(orderId, {
-                                status: 'paid',
-                                transaction_id: result.transaction_id,
-                                payment_type: result.payment_type,
-                            });
-                            alert("Pembayaran berhasil! ✅");
-                        } catch (error) {
-                            console.error('Update status error:', error);
-                            alert("Pembayaran OK, webhook handle sisanya");
+                        if (!paymentSuccess) { // Show alert only if not shown before
+                            try {
+                                await paymentService.updatePaymentStatus(orderId, {
+                                    status: 'paid',
+                                    transaction_id: result.transaction_id,
+                                    payment_type: result.payment_type,
+                                });
+                                alert("Pembayaran berhasil! ✅");
+                                setPaymentSuccess(true); // Set flag to prevent duplicate alerts
+                            } catch (error) {
+                                console.error('Update status error:', error);
+                                alert("Pembayaran OK, webhook handle sisanya");
+                            }
+                            navigate("/user/orders");
                         }
-                        navigate("/user/orders");
                     },
                     onPending: async function (result) {
                         console.log('⏳ Payment pending:', result);
@@ -128,11 +129,8 @@ export default function Payment() {
                     onClose: function () {
                         console.log('🔒 Payment popup closed');
                         alert("Popup ditutup. Status dicek otomatis...");
-                        // Biar polling lanjut detect expired
+                        // Let polling continue to detect expired
                     },
-                    // Optional: Restrict payments (misal cuma bank transfer)
-                    // enabledPayments: ['bank_transfer', 'credit_card'],
-                    // language: 'id',  // Bahasa Indonesia
                 });
             }
         } catch (error) {
@@ -148,21 +146,22 @@ export default function Payment() {
         }
         console.log('Manual trigger snap.pay...');
         window.snap.pay(snapToken, {
-            // Sama config kayak auto-trigger
             onSuccess: async (result) => {
-                // Sama logic
-                console.log('✅ Retry success:', result);
-                try {
-                    await paymentService.updatePaymentStatus(orderId, {
-                        status: 'paid',
-                        transaction_id: result.transaction_id,
-                        payment_type: result.payment_type,
-                    });
-                    alert("Pembayaran berhasil! ✅");
-                } catch (error) {
-                    console.error('Retry update error:', error);
+                if (!paymentSuccess) { // Show alert only if not shown before
+                    console.log('✅ Retry success:', result);
+                    try {
+                        await paymentService.updatePaymentStatus(orderId, {
+                            status: 'paid',
+                            transaction_id: result.transaction_id,
+                            payment_type: result.payment_type,
+                        });
+                        alert("Pembayaran berhasil! ✅");
+                        setPaymentSuccess(true); // Set flag to prevent duplicate alerts
+                    } catch (error) {
+                        console.error('Retry update error:', error);
+                    }
+                    navigate("/user/orders");
                 }
-                navigate("/user/orders");
             },
             onPending: (result) => {
                 alert("Menunggu pembayaran...");
