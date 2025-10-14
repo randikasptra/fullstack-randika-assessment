@@ -5,6 +5,8 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
@@ -25,13 +27,20 @@ class PaymentController extends Controller
             ->where('user_id', auth()->id())
             ->findOrFail($orderId);
 
-        // Di PaymentController.php - method getSnapToken
-        if ($order->status !== 'pending') {
+        // Allow generate/regenerate kalau pending, cancelled, atau expired (buat retry)
+        if (!in_array($order->status, ['pending', 'cancelled', 'expired'])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Order sudah diproses atau dibatalkan',
             ], 400);
         }
+
+        // Reset status ke pending kalau cancelled/expired (buat retry, stok udah balik via webhook)
+        if ($order->status !== 'pending') {
+            $order->update(['status' => 'pending', 'snap_token' => null]);
+            Log::info('Reset order for retry', ['order_id' => $orderId]);
+        }
+
         // Jika sudah ada snap token, return yang lama
         if ($order->snap_token) {
             return response()->json([
@@ -70,6 +79,11 @@ class PaymentController extends Controller
                     'postal_code' => $order->shippingAddress->postal_code,
                 ],
             ],
+            // Custom expiry 15 menit (tanpa start_time biar default current time)
+            'expiry' => [
+                'duration' => 15,
+                'unit' => 'minute',  // Lowercase sesuai doc Midtrans
+            ],
         ];
 
         try {
@@ -78,12 +92,15 @@ class PaymentController extends Controller
             // Save snap token
             $order->update(['snap_token' => $snapToken]);
 
+            Log::info('Snap token generated', ['order_id' => $orderId]);
+
             return response()->json([
                 'success' => true,
                 'snap_token' => $snapToken,
-                'order' => $order,
+                'order' => $order->fresh(),
             ]);
         } catch (\Exception $e) {
+            Log::error('Snap token error', ['order_id' => $orderId, 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat payment token: ' . $e->getMessage(),
@@ -94,7 +111,7 @@ class PaymentController extends Controller
     public function updateStatus(Request $request, $orderId)
     {
         $validated = $request->validate([
-            'status' => 'required|in:paid,pending,cancelled',
+            'status' => 'required|in:paid,pending,cancelled,expired',
             'transaction_id' => 'nullable|string',
             'payment_type' => 'nullable|string',
         ]);
@@ -123,6 +140,8 @@ class PaymentController extends Controller
 
         $order->update($updateData);
 
+        Log::info('Status updated from frontend', ['order_id' => $orderId, 'new_status' => $validated['status']]);
+
         return response()->json([
             'success' => true,
             'message' => 'Status pembayaran berhasil diupdate',
@@ -145,47 +164,62 @@ class PaymentController extends Controller
             $orderIdNumber = $matches[1] ?? null;
 
             if (!$orderIdNumber) {
-                return response()->json(['success' => false, 'message' => 'Invalid order ID'], 400);
+                Log::warning('Invalid order ID in webhook', ['order_id' => $orderId]);
+                return response('OK', 200);  // Plain OK biar Midtrans gak retry
             }
 
-            $order = Order::find($orderIdNumber);
+            $order = Order::with('orderItems.book')->find($orderIdNumber);
 
             if (!$order) {
-                return response()->json(['success' => false, 'message' => 'Order not found'], 404);
+                Log::warning('Order not found in webhook', ['order_id' => $orderIdNumber]);
+                return response('OK', 200);
             }
 
-            // Handle status berdasarkan response Midtrans
-            if ($transactionStatus == 'capture') {
-                if ($fraudStatus == 'accept') {
+            DB::beginTransaction();  // Safety buat update & stock
+            try {
+                if ($transactionStatus == 'capture') {
+                    if ($fraudStatus == 'accept') {
+                        $order->update([
+                            'status' => 'paid',
+                            'payment_type' => $paymentType,
+                            'paid_at' => now(),
+                        ]);
+                        Log::info('Payment captured (success)', ['order_id' => $orderIdNumber]);
+                    }
+                } elseif ($transactionStatus == 'settlement') {
                     $order->update([
                         'status' => 'paid',
                         'payment_type' => $paymentType,
                         'paid_at' => now(),
                     ]);
-                }
-            } elseif ($transactionStatus == 'settlement') {
-                $order->update([
-                    'status' => 'paid',
-                    'payment_type' => $paymentType,
-                    'paid_at' => now(),
-                ]);
-            } elseif ($transactionStatus == 'pending') {
-                // Keep as pending
-            } elseif ($transactionStatus == 'deny' || $transactionStatus == 'expire' || $transactionStatus == 'cancel') {
-                $order->update(['status' => 'cancelled']);
+                    Log::info('Payment settled (success)', ['order_id' => $orderIdNumber]);
+                } elseif ($transactionStatus == 'pending') {
+                    Log::info('Payment pending', ['order_id' => $orderIdNumber]);
+                } elseif ($transactionStatus == 'deny' || $transactionStatus == 'expire' || $transactionStatus == 'cancel') {
+                    $order->update(['status' => 'cancelled']);  // Atau 'expired' kalau enum mu beda
 
-                // Kembalikan stok
-                foreach ($order->orderItems as $item) {
-                    $item->book->increment('stock', $item->quantity);
+                    // Kembalikan stok
+                    foreach ($order->orderItems as $item) {
+                        $item->book->increment('stock', $item->quantity);
+                        Log::info('Stock restored on expire', [
+                            'order_id' => $orderIdNumber,
+                            'book_id' => $item->book_id,
+                            'quantity' => $item->quantity,
+                        ]);
+                    }
+                    Log::info('Order expired/cancelled & stock restored', ['order_id' => $orderIdNumber]);
                 }
+
+                DB::commit();
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Webhook transaction failed', ['error' => $e->getMessage(), 'order_id' => $orderIdNumber]);
             }
 
-            return response()->json(['success' => true]);
+            return response('OK', 200);  // Plain OK
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            Log::error('Webhook error', ['error' => $e->getMessage()]);
+            return response('OK', 200);  // Selalu OK biar gak retry
         }
     }
 }

@@ -147,49 +147,113 @@ export default function Profile() {
         }
     };
 
-    if (loading) {
-        return <LoadingSpinner />;
-    }
+    // Placeholder profile data for skeleton
+    const placeholderProfile = {
+        name: "Memuat...",
+        email: "memuat@example.com",
+        phone: "",
+        address: "",
+        city: "",
+        province: "",
+        postal_code: ""
+    };
 
-    if (!profile) {
-        return (
-            <UserLayout>
-                <div className="text-center py-16">
-                    <p className="text-gray-600 dark:text-gray-400">Profil tidak ditemukan</p>
-                </div>
-            </UserLayout>
-        );
-    }
+    const displayProfile = loading ? placeholderProfile : profile;
 
     return (
         <UserLayout>
             <div className="max-w-4xl mx-auto px-4 py-8">
-                <ProfileHeader />
+                {loading ? (
+                    <div className="animate-pulse">
+                        {/* Profile Header Skeleton */}
+                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                                <div className="flex-1">
+                                    <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                            </div>
+                        </div>
 
-                <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Profile Information */}
-                    <div>
-                        <ProfileInfoCard
-                            profile={profile}
-                            editing={editing}
-                            saving={saving}
-                            onEditToggle={handleEditToggle}
-                            onProfileChange={handleProfileChange}
-                            onSave={handleSaveProfile}
-                        />
-                    </div>
+                        <div className="grid lg:grid-cols-2 gap-8">
+                            {/* Profile Information Skeleton */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="h-5 bg-gray-200 rounded w-24"></div>
+                                    <div className="h-8 bg-gray-200 rounded w-20"></div>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                </div>
+                            </div>
 
-                    {/* Change Password */}
-                    <div>
-                        <ChangePasswordCard
-                            passwordData={passwordData}
-                            passwordErrors={passwordErrors}
-                            onPasswordChange={handlePasswordChange}
-                            onChangePassword={handleChangePassword}
-                            saving={saving}
-                        />
+                            {/* Change Password Skeleton */}
+                            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+                                <div className="h-5 bg-gray-200 rounded w-32 mb-6"></div>
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                                        <div className="h-10 bg-gray-200 rounded"></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                                        <div className="h-10 bg-gray-200 rounded"></div>
+                                    </div>
+                                    <div className="h-10 bg-gray-200 rounded w-full"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    <>
+                        <ProfileHeader profile={displayProfile} />
+
+                        <div className="grid lg:grid-cols-2 gap-8">
+                            {/* Profile Information */}
+                            <div>
+                                <ProfileInfoCard
+                                    profile={displayProfile}
+                                    editing={editing}
+                                    saving={saving}
+                                    onEditToggle={handleEditToggle}
+                                    onProfileChange={handleProfileChange}
+                                    onSave={handleSaveProfile}
+                                />
+                            </div>
+
+                            {/* Change Password */}
+                            <div>
+                                <ChangePasswordCard
+                                    passwordData={passwordData}
+                                    passwordErrors={passwordErrors}
+                                    onPasswordChange={handlePasswordChange}
+                                    onChangePassword={handleChangePassword}
+                                    saving={saving}
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </UserLayout>
     );
