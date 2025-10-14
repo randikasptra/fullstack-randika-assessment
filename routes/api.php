@@ -10,12 +10,20 @@ use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\CheckoutController;
 use App\Http\Controllers\User\PaymentController;
 use App\Http\Controllers\User\OrderController;
+use App\Http\Controllers\Admin\OrderControllerAdmin;
 use App\Http\Controllers\User\BookUserController;
 use App\Events\StockUpdatedEvent;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
+use App\Http\Controllers\Admin\TransactionHistoryController;
+
+Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    Route::get('/transactions', [TransactionHistoryController::class, 'index']);
+    Route::get('/transactions/{id}', [TransactionHistoryController::class, 'show']);
+});
+
 
 // ============================================
 // 🧪 TESTING & DEBUG ROUTES (Remove in Production)
@@ -127,14 +135,15 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::delete('/{id}', [UserController::class, 'destroy']);
     });
 
-    // Admin Order Management
+
     Route::prefix('orders')->group(function () {
-        Route::get('/', [OrderController::class, 'adminIndex']); // Semua orders
-        Route::get('/stats', [OrderController::class, 'stats']); // Order statistics
-        Route::get('/{id}', [OrderController::class, 'adminShow']); // Detail order
-        Route::put('/{id}/status', [OrderController::class, 'updateStatus']); // Update status
-        Route::delete('/{id}', [OrderController::class, 'adminDestroy']); // Delete order
+        Route::get('/', [OrderControllerAdmin::class, 'index']); // ✅ Semua orders
+        Route::get('/{id}', [OrderControllerAdmin::class, 'show']); // ✅ Detail order by ID
+        Route::patch('/{id}/status', [OrderControllerAdmin::class, 'updateStatus']);
+        Route::patch('/{id}/tracking-notes', [OrderControllerAdmin::class, 'updateTrackingAndNotes']);
+        Route::delete('/{id}', [OrderControllerAdmin::class, 'destroy']); // ✅ Delete order
     });
+
 });
 
 // ============================================
