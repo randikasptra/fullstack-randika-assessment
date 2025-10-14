@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
-class OrderController extends Controller
+class OrderControllerAdmin extends Controller
 {
     /**
      * Ambil semua orders dengan relasi user dan items
