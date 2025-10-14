@@ -62,18 +62,20 @@ export const createUser = async (formData) => {
  * Update an existing user
  */
 export const updateUser = async (userId, formData) => {
+    console.log("Updating user with data:", formData);
     try {
         const response = await axios.put(
             `${API_BASE_URL}/api/users/${userId}`,
             formData,
             { headers: getAuthHeaders() }
         );
+        console.log("Update response:", response.data);
         return { success: true, data: response.data };
     } catch (error) {
-        console.error("Error updating user:", error);
+        console.error("Error updating user:", error.response?.data);
         return {
             success: false,
-            error: error.response?.data?.message || "Gagal memperbarui user."
+            error: error.response?.data?.message || "Gagal memperbarui user.",
         };
     }
 };

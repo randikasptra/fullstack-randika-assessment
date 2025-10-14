@@ -1,72 +1,122 @@
-import axios from 'axios';
-import { API_BASE_URL } from '../../../config/api';
+import axios from "axios";
+import { API_BASE_URL } from "../../../config/api";
 
-const getAuthToken = () => localStorage.getItem("auth_token");
+const API_URL = `${API_BASE_URL}/api/admin/orders`;
 
-const getAuthHeaders = () => ({
-    Authorization: `Bearer ${getAuthToken()}`,
-    'Accept': 'application/json',
-});
+// Ambil token dari localStorage
+const getAuthHeader = () => {
+    const token = localStorage.getItem("auth_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
-const adminOrderService = {
-    getOrders: async (params = {}) => {
+export const adminOrderService = {
+    /**
+     * Ambil semua orders
+     * Response: { success: true, data: [...] }
+     */
+    async getOrders() {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/admin/orders`, {
-                headers: getAuthHeaders(),
-                params,
+            const response = await axios.get(API_URL, {
+                headers: getAuthHeader(),
             });
             return response.data;
         } catch (error) {
-            console.error('Admin orders error:', error.response?.data || error);
-            throw error.response?.data || error;
+            throw (
+                error.response?.data || {
+                    success: false,
+                    message: error.message || "Failed to load orders",
+                }
+            );
         }
     },
 
-    getOrderDetail: async (orderId) => {
+    /**
+     * Ambil detail order by ID
+     * Response: { success: true, data: {...} }
+     */
+    // Di adminOrderService.js, method getOrderById
+    async getOrderById(id) {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/admin/orders/${orderId}`, {
-                headers: getAuthHeaders(),
+            const response = await axios.get(`${API_URL}/${id}`, {
+                headers: getAuthHeader(),
             });
+            console.log("Admin getOrderById response:", response.data); // Debug: Liat data
             return response.data;
         } catch (error) {
-            console.error('Order detail error:', error.response?.data || error);
-            throw error.response?.data || error;
+            console.error(
+                "Admin getOrderById error:",
+                error.response?.data || error
+            ); // Debug error
+            throw (
+                error.response?.data || {
+                    success: false,
+                    message: "Order not found",
+                }
+            );
         }
     },
 
-    updateStatus: async (orderId, status) => {
+    /**
+     * Update status order (hanya: shipped, completed, cancelled)
+     * Response: { success: true, message: '...', data: {...} }
+     */
+    async updateOrderStatus(id, status) {
         try {
-            const response = await axios.put(`${API_BASE_URL}/api/admin/orders/${orderId}/status`, { status }, {
-                headers: getAuthHeaders(),
-            });
+            const response = await axios.patch(
+                `${API_URL}/${id}/status`,
+                { status },
+                { headers: getAuthHeader() }
+            );
             return response.data;
         } catch (error) {
-            console.error('Update status error:', error.response?.data || error);
-            throw error.response?.data || error;
+            throw (
+                error.response?.data || {
+                    success: false,
+                    message: "Failed to update status",
+                }
+            );
         }
     },
 
-    cancelOrder: async (orderId) => {
+    /**
+     * Update tracking number and notes
+     * Response: { success: true, message: '...', data: {...} }
+     */
+    async updateTrackingAndNotes(id, data) {
         try {
-            const response = await axios.post(`${API_BASE_URL}/api/admin/orders/${orderId}/cancel`, {}, {
-                headers: getAuthHeaders(),
-            });
+            const response = await axios.patch(
+                `${API_URL}/${id}/tracking-notes`,
+                data,
+                { headers: getAuthHeader() }
+            );
             return response.data;
         } catch (error) {
-            console.error('Cancel order error:', error.response?.data || error);
-            throw error.response?.data || error;
+            throw (
+                error.response?.data || {
+                    success: false,
+                    message: "Failed to update tracking/notes",
+                }
+            );
         }
     },
 
-    getStats: async () => {
+    /**
+     * Delete order (opsional)
+     * Response: { success: true, message: '...' }
+     */
+    async deleteOrder(id) {
         try {
-            const response = await axios.get(`${API_BASE_URL}/api/admin/orders/stats`, {
-                headers: getAuthHeaders(),
+            const response = await axios.delete(`${API_URL}/${id}`, {
+                headers: getAuthHeader(),
             });
             return response.data;
         } catch (error) {
-            console.error('Order stats error:', error.response?.data || error);
-            throw error.response?.data || error;
+            throw (
+                error.response?.data || {
+                    success: false,
+                    message: "Failed to delete order",
+                }
+            );
         }
     },
 };
