@@ -94,6 +94,8 @@ const AdminOrders = () => {
         status: "pending",
         total_price: 0,
         user: { name: "Memuat...", email: "memuat@example.com" },
+        order_items: [],
+        shipping_address: null,
     }));
 
     const displayOrders = loading ? placeholderOrders : filteredOrders;
@@ -138,8 +140,9 @@ const AdminOrders = () => {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shipping</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
@@ -149,19 +152,28 @@ const AdminOrders = () => {
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {displayOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                                        <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
                                             No orders found
                                         </td>
                                     </tr>
                                 ) : (
                                     displayOrders.map((order) => (
                                         <tr key={order.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                #{order.id}
-                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="text-sm text-gray-900">{order.user?.name || "N/A"}</div>
                                                 <div className="text-sm text-gray-500">{order.user?.email || "N/A"}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {order.order_items?.length || 0} item(s)
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-900">
+                                                {order.shipping_address ? (
+                                                    <div className="max-w-32 truncate">
+                                                        {order.shipping_address.recipient_name} - {order.shipping_address.city}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-500">No address</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {formatCurrency(order.total_price || 0)}

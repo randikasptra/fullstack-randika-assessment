@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Package, MapPin, CreditCard, Calendar, XCircle, Truck, CheckCircle } from "lucide-react";
+import { ArrowLeft, Package, MapPin, CreditCard, Calendar, XCircle, Truck, CheckCircle, Clock } from "lucide-react";
 import adminOrderService from "../../services/admin/adminOrderService";
 import AdminLayout from "../../layouts/AdminLayout";
 
@@ -14,6 +14,8 @@ const OrderDetailAdmin = () => {
     const [newStatus, setNewStatus] = useState("");
 
     const statusOptions = [
+        { value: "pending", label: "Pending", icon: Clock },
+        { value: "paid", label: "Paid", icon: CreditCard },
         { value: "shipped", label: "Shipped", icon: Truck },
         { value: "completed", label: "Completed", icon: CheckCircle },
         { value: "cancelled", label: "Cancelled", icon: XCircle },
@@ -29,10 +31,16 @@ const OrderDetailAdmin = () => {
             const response = await adminOrderService.getOrderById(id);
             console.log('Full response from API:', response);  // Debug: Liat data ada apa
             if (response.success) {
-                setOrder(response.data);
-                setTrackingNumber(response.data.tracking_number || "");
-                setNotes(response.data.notes || "");
-                setNewStatus(response.data.status);
+                const data = response.data;
+                const transformedOrder = {
+                    ...data,
+                    orderItems: data.order_items || [],
+                    shippingAddress: data.shipping_address,
+                };
+                setOrder(transformedOrder);
+                setTrackingNumber(data.tracking_number || "");
+                setNotes(data.notes || "");
+                setNewStatus(data.status);
             } else {
                 alert(response.message || 'Gagal load order');
             }
@@ -94,21 +102,6 @@ const OrderDetailAdmin = () => {
         return colors[status] || colors.pending;
     };
 
-    // Skeleton placeholder mirip user
-    const placeholderOrder = {
-        id: id || "000",
-        order_date: new Date().toISOString(),
-        status: "pending",
-        total_price: 0,
-        user: { name: "Memuat...", email: "memuat@example.com" },
-        orderItems: [{ book: { title: "Memuat...", price: 0 }, quantity: 1 }],
-        shippingAddress: { recipient_name: "Memuat...", address: "Memuat...", city: "Memuat...", postal_code: "" },
-        notes: "",
-        tracking_number: "",
-    };
-
-    const displayOrder = loading ? placeholderOrder : order;
-
     if (loading) {
         return (
             <AdminLayout>
@@ -149,7 +142,7 @@ const OrderDetailAdmin = () => {
                 </div>
 
                 <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Order Items – Mirip User */}
+                    {/* Order Items */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-xl shadow-md p-6">
                             <div className="flex items-center gap-2 mb-4">
@@ -161,12 +154,18 @@ const OrderDetailAdmin = () => {
                                     order.orderItems.map((item) => (
                                         <div key={item.id} className="flex gap-4 pb-4 border-b last:border-0">
                                             <img
-                                                src={item.book?.cover_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"}
+                                                src={item.book?.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80"}
                                                 alt={item.book?.title}
                                                 className="w-24 h-32 object-cover rounded-lg"
                                             />
                                             <div className="flex-1">
                                                 <h3 className="font-semibold text-lg text-gray-900 mb-1">{item.book?.title || "N/A"}</h3>
+                                                {item.book?.author && (
+                                                    <p className="text-sm text-gray-600 mb-1">by {item.book.author}</p>
+                                                )}
+                                                {item.book?.publisher && (
+                                                    <p className="text-sm text-gray-600 mb-2">{item.book.publisher}, {item.book.year}</p>
+                                                )}
                                                 <p className="text-sm text-gray-600 mb-2">Qty: {item.quantity}</p>
                                                 <p className="text-sm text-gray-700">Price: {formatCurrency(item.book?.price || 0)}</p>
                                                 <p className="text-lg font-bold text-green-700 mt-2">Subtotal: {formatCurrency((item.book?.price || 0) * item.quantity)}</p>
@@ -174,12 +173,12 @@ const OrderDetailAdmin = () => {
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-gray-500">No items</p>
+                                    <p className="text-gray-500 italic">No items in this order</p>
                                 )}
                             </div>
                         </div>
 
-                        {/* Shipping Address – Mirip User */}
+                        {/* Shipping Address */}
                         {order.shippingAddress ? (
                             <div className="bg-white rounded-xl shadow-md p-6">
                                 <div className="flex items-center gap-2 mb-4">
@@ -190,15 +189,19 @@ const OrderDetailAdmin = () => {
                                     <p className="font-semibold text-gray-900">{order.shippingAddress.recipient_name}</p>
                                     <p className="text-gray-700">{order.shippingAddress.phone}</p>
                                     <p className="text-gray-700">{order.shippingAddress.address}</p>
-                                    <p className="text-gray-600">{order.shippingAddress.city}, {order.shippingAddress.postal_code}</p>
+                                    <p className="text-gray-600">
+                                        {order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.postal_code}
+                                    </p>
                                 </div>
                             </div>
                         ) : (
-                            <p className="text-gray-500 bg-white rounded-xl shadow-md p-6">No shipping address</p>
+                            <div className="bg-white rounded-xl shadow-md p-6">
+                                <p className="text-gray-500 italic">No shipping address provided</p>
+                            </div>
                         )}
                     </div>
 
-                    {/* Summary & Actions – Mirip User, Tapi Admin Actions */}
+                    {/* Summary & Actions */}
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white rounded-xl shadow-md p-6 sticky top-4">
                             <h2 className="text-xl font-bold text-gray-900 mb-4">Ringkasan</h2>
@@ -214,18 +217,18 @@ const OrderDetailAdmin = () => {
                                 <div className="border-t pt-3">
                                     <div className="flex justify-between text-lg font-bold text-gray-900">
                                         <span>Total</span>
-                                        <span className="text-green-700">{formatCurrency(order.total_price)}</span>
+                                        <span className="text-green-700">{formatCurrency(order.total_price || 0)}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Update Status Form */}
                             <form onSubmit={handleStatusUpdate} className="space-y-4 mb-6">
-                                <label className="block text-sm font-medium mb-2">Update Status</label>
+                                <label className="block text-sm font-medium mb-2 text-gray-700">Update Status</label>
                                 <select
                                     value={newStatus}
                                     onChange={(e) => setNewStatus(e.target.value)}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
+                                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     disabled={updating}
                                 >
                                     {statusOptions.map((opt) => (
@@ -236,8 +239,8 @@ const OrderDetailAdmin = () => {
                                 </select>
                                 <button
                                     type="submit"
-                                    disabled={updating}
-                                    className="w-full bg-indigo-600 text-white px-4 py-3 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                                    disabled={updating || newStatus === order.status}
+                                    className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                                 >
                                     {updating ? "Updating..." : "Update Status"}
                                 </button>
@@ -247,28 +250,30 @@ const OrderDetailAdmin = () => {
                             <form onSubmit={handleSaveTrackingAndNotes} className="space-y-4">
                                 {order.status === "shipped" && (
                                     <div>
-                                        <label className="block text-sm font-medium mb-2">Tracking Number</label>
+                                        <label className="block text-sm font-medium mb-2 text-gray-700">Tracking Number</label>
                                         <input
                                             type="text"
                                             value={trackingNumber}
                                             onChange={(e) => setTrackingNumber(e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded-md"
+                                            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                            placeholder="Masukkan nomor tracking"
                                         />
                                     </div>
                                 )}
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Admin Notes</label>
+                                    <label className="block text-sm font-medium mb-2 text-gray-700">Admin Notes</label>
                                     <textarea
                                         value={notes}
                                         onChange={(e) => setNotes(e.target.value)}
                                         rows={3}
-                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                        placeholder="Catatan admin..."
+                                        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                                        placeholder="Catatan admin untuk order ini..."
                                     />
                                 </div>
                                 <button
                                     type="submit"
-                                    className="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700"
+                                    className="w-full bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 font-medium transition-colors"
+                                    disabled={!notes && !trackingNumber && order.status !== "shipped"}
                                 >
                                     Save Tracking & Notes
                                 </button>
