@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MapPin, CreditCard, Calendar, XCircle } from 'lucide-react';
-import cartService from '../../services/user/cartService';
-import checkoutService from '../../services/user/checkoutService';
-import paymentService from '../../services/user/paymentService';
+import { ArrowLeft, Package, MapPin, CreditCard, Calendar, XCircle, CheckCircle } from 'lucide-react';
 import orderService from '../../services/user/orderService';
 import UserLayout from "../../layouts/UserLayout";
 
@@ -42,6 +39,20 @@ export default function OrderDetail() {
             }
         } catch (error) {
             alert(error.message || 'Gagal membatalkan pesanan');
+        }
+    };
+
+    const handleConfirmOrder = async () => {
+        if (!confirm('Yakin ingin mengkonfirmasi pesanan ini sebagai selesai?')) return;
+
+        try {
+            const response = await orderService.confirmOrder(id);
+            if (response.success) {
+                alert('Pesanan berhasil dikonfirmasi sebagai selesai');
+                fetchOrderDetail();
+            }
+        } catch (error) {
+            alert(error.message || 'Gagal mengkonfirmasi pesanan');
         }
     };
 
@@ -275,6 +286,19 @@ export default function OrderDetail() {
                                     >
                                         <XCircle className={`w-5 h-5 ${loading ? 'text-gray-300' : ''}`} />
                                         {loading ? "Memuat..." : "Batalkan Pesanan"}
+                                    </button>
+                                </div>
+                            )}
+
+                            {displayOrder.status === 'shipped' && (
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={handleConfirmOrder}
+                                        disabled={loading}
+                                        className={`w-full flex items-center justify-center gap-2 ${loading ? 'bg-gray-400 cursor-not-allowed text-gray-500' : 'bg-green-100 hover:bg-green-200 text-green-700'} px-4 py-3 rounded-lg transition font-semibold`}
+                                    >
+                                        <CheckCircle className={`w-5 h-5 ${loading ? 'text-gray-300' : ''}`} />
+                                        {loading ? "Memuat..." : "Konfirmasi Selesai"}
                                     </button>
                                 </div>
                             )}

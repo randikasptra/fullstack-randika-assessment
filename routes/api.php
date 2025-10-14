@@ -191,6 +191,7 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
         Route::get('/{id}', [OrderController::class, 'show']); // Order detail
         Route::post('/{id}/cancel', [OrderController::class, 'cancel']); // Cancel order
         Route::delete('/{id}', [OrderController::class, 'destroy']); // Delete cancelled order
+        Route::post('/{id}/confirm', [OrderController::class, 'confirmOrder']); // Confirm shipped order
     });
 });
 Route::post('/user/simulate-expire/{id}', function ($id) {

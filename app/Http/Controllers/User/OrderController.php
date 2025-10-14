@@ -77,7 +77,7 @@ class OrderController extends Controller
     }
 
     /**
-     * ✅ Delete order (only for cancelled status)
+     * Delete order (only for cancelled status)
      */
     public function destroy($orderId)
     {
@@ -117,6 +117,35 @@ class OrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus pesanan: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Confirm order and update status to completed (only for shipped status)
+     */
+    public function confirmOrder($orderId)
+    {
+        $order = Order::where('user_id', auth()->id())
+            ->where('status', 'shipped')
+            ->findOrFail($orderId);
+
+        DB::beginTransaction();
+        try {
+            $order->update(['status' => 'completed']);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesanan berhasil dikonfirmasi sebagai selesai',
+                'data' => $order->fresh(),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengkonfirmasi pesanan: ' . $e->getMessage(),
             ], 500);
         }
     }
