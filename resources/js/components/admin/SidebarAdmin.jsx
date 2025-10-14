@@ -69,12 +69,12 @@ const SidebarAdmin = () => {
                     name: "Kelola Kategori",
                     icon: <FaTags />,
                 },
-                {
-                    path: "/admin/inventory",
-                    name: "Inventory Tracking",
-                    icon: <FaWarehouse />,
-                    badge: "New"
-                },
+                // {
+                //     path: "/admin/inventory",
+                //     name: "Inventory Tracking",
+                //     icon: <FaWarehouse />,
+                //     badge: "New"
+                // },
             ]
         },
         {
@@ -94,11 +94,11 @@ const SidebarAdmin = () => {
                     name: "Riwayat Transaksi",
                     icon: <FaMoneyBillWave />,
                 },
-                {
-                    path: "/admin/payments",
-                    name: "Payment Gateway",
-                    icon: <FaCreditCard />,
-                },
+                // {
+                //     path: "/admin/payments",
+                //     name: "Payment Gateway",
+                //     icon: <FaCreditCard />,
+                // },
             ]
         },
         {

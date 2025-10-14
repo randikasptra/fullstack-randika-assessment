@@ -4,227 +4,196 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Book;
+use App\Models\OrderLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // Tambah import ini untuk logging
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
     /**
-     * Display a listing of orders.
+     * Ambil semua orders dengan relasi user dan items
      */
-    public function index(Request $request)
+    public function index()
     {
-        Log::info('Admin Orders Index Called', [
-            'user_id' => auth()->id(),
-            'params' => $request->all(),
-        ]);
-
         try {
-            $query = Order::with(['user', 'orderItems.book'])
-                ->orderBy('created_at', 'desc');
-
-            // Search and filter
-            if ($search = $request->get('search')) {
-                Log::info('Applying search filter', ['search' => $search]);
-                $query->where(function ($q) use ($search) {
-                    $q->where('id', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($userQuery) use ($search) {
-                          $userQuery->where('name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%");
-                      });
-                });
-            }
-
-            if ($status = $request->get('status')) {
-                Log::info('Applying status filter', ['status' => $status]);
-                $query->where('status', $status);
-            }
-
-            $orders = $query->paginate(10);
-            Log::info('Orders Query Executed', [
-                'total' => $orders->total(),
-                'per_page' => $orders->perPage(),
-                'current_page' => $orders->currentPage(),
-            ]);
+            $orders = Order::with(['user', 'orderItems.book', 'shippingAddress'])
+                ->orderBy('created_at', 'desc')
+                ->get();
 
             return response()->json([
                 'success' => true,
-                'data' => $orders,
+                'data' => $orders
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in Admin Orders Index', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id(),
-            ]);
+            Log::error('Failed to fetch orders: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memuat pesanan: ' . $e->getMessage(),
+                'message' => 'Failed to fetch orders: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Display the specified order.
+     * Detail order by ID
      */
     public function show($id)
     {
-        Log::info('Admin Order Show Called', ['order_id' => $id, 'user_id' => auth()->id()]);
-
         try {
-            $order = Order::with(['user', 'orderItems.book'])
+            $order = Order::with(['user', 'orderItems.book', 'shippingAddress', 'orderLogs.updatedBy'])
                 ->findOrFail($id);
-
-            Log::info('Order Found', ['order_id' => $id, 'status' => $order->status]);
 
             return response()->json([
                 'success' => true,
-                'data' => $order,
+                'data' => $order
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in Admin Order Show', [
-                'order_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            Log::error('Order not found: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Pesanan tidak ditemukan',
+                'message' => 'Order not found'
             ], 404);
         }
     }
 
     /**
-     * Update order status.
+     * Update status order (khusus untuk admin)
+     * Admin hanya bisa update dari: paid → shipped → completed
+     * atau cancelled kapan saja. Auto-log ke order_logs.
      */
     public function updateStatus(Request $request, $id)
     {
-        Log::info('Admin Update Status Called', ['order_id' => $id, 'new_status' => $request->status]);
-
         $request->validate([
-            'status' => 'required|in:pending,paid,shipped,completed,cancelled',
+            'status' => 'required|in:shipped,completed,cancelled'
         ]);
 
-        try {
-            $order = Order::findOrFail($id);
+        DB::beginTransaction();
 
-            // Handle stock return on cancel
-            if ($request->status === 'cancelled' && $order->status !== 'cancelled') {
-                Log::info('Returning stock for cancel', ['order_id' => $id]);
+        try {
+            $order = Order::with('orderItems.book')->findOrFail($id);
+            $oldStatus = $order->status;
+            $newStatus = $request->status;
+
+            // Validasi: order harus sudah paid untuk bisa di-ship/complete
+            if (in_array($newStatus, ['shipped', 'completed']) && $oldStatus !== 'paid') {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot update status. Order must be paid first.'
+                ], 400);
+            }
+
+            // Jika order di-cancel, kembalikan stok (hanya jika sebelumnya paid/shipped)
+            if ($newStatus === 'cancelled' && in_array($oldStatus, ['paid', 'shipped'])) {
                 foreach ($order->orderItems as $item) {
-                    $item->book->increment('stock', $item->quantity);
+                    $book = $item->book;
+                    $book->stock += $item->quantity;
+                    $book->save();
                 }
             }
 
-            $order->update([
-                'status' => $request->status,
+            // Update status
+            $order->status = $newStatus;
+            $order->save();
+
+            // Auto-log ke order_logs
+            OrderLog::create([
+                'order_id' => $order->id,
+                'status' => $newStatus,
+                'updated_by' => Auth::id(), // Asumsi auth user adalah admin
             ]);
 
-            Log::info('Status Updated Successfully', ['order_id' => $id, 'old_status' => $order->getOriginal('status'), 'new_status' => $request->status]);
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Status pesanan berhasil diupdate',
-                'data' => $order->load(['orderItems.book']),
+                'message' => 'Order status updated successfully',
+                'data' => $order->load(['user', 'orderItems.book', 'shippingAddress', 'orderLogs'])
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in Admin Update Status', [
-                'order_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            DB::rollBack();
+            Log::error('Failed to update order status: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal update status',
+                'message' => 'Failed to update order status: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Cancel order.
+     * Update tracking number and notes
      */
-    public function cancel($id)
+    public function updateTrackingAndNotes(Request $request, $id)
     {
-        Log::info('Admin Cancel Order Called', ['order_id' => $id]);
+        $request->validate([
+            'tracking_number' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $order = Order::findOrFail($id);
+            $order->tracking_number = $request->tracking_number ?? $order->tracking_number;
+            $order->notes = $request->notes ?? $order->notes;
+            $order->save();
+
+            // Opsional: Log jika ada perubahan tracking (bisa extend OrderLog jika perlu)
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tracking and notes updated successfully',
+                'data' => $order->load(['user', 'orderItems.book', 'shippingAddress', 'orderLogs'])
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update tracking/notes: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update tracking/notes: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete order (opsional, untuk admin)
+     */
+    public function destroy($id)
+    {
+        DB::beginTransaction();
 
         try {
             $order = Order::with('orderItems.book')->findOrFail($id);
 
-            if ($order->status === 'cancelled') {
-                Log::warning('Order already cancelled', ['order_id' => $id]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pesanan sudah dibatalkan',
-                ], 400);
+            // Kembalikan stok jika order sudah paid/shipped
+            if (in_array($order->status, ['paid', 'shipped'])) {
+                foreach ($order->orderItems as $item) {
+                    $book = $item->book;
+                    $book->stock += $item->quantity;
+                    $book->save();
+                }
             }
 
-            $order->update(['status' => 'cancelled']);
+            $order->delete();
 
-            // Return stock
-            foreach ($order->orderItems as $item) {
-                $item->book->increment('stock', $item->quantity);
-                Log::info('Stock returned', ['book_id' => $item->book_id, 'quantity' => $item->quantity]);
-            }
-
-            Log::info('Order Cancelled Successfully', ['order_id' => $id]);
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pesanan berhasil dibatalkan',
-                'data' => $order,
+                'message' => 'Order deleted successfully'
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in Admin Cancel Order', [
-                'order_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
+            DB::rollBack();
+            Log::error('Failed to delete order: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membatalkan pesanan',
-            ], 500);
-        }
-    }
-
-    /**
-     * Get order statistics for admin dashboard.
-     */
-    public function stats()
-    {
-        Log::info('Admin Order Stats Called', ['user_id' => auth()->id()]);
-
-        try {
-            $totalOrders = Order::count();
-            $pendingOrders = Order::where('status', 'pending')->count();
-            $paidOrders = Order::where('status', 'paid')->count();
-            $totalRevenue = Order::where('status', 'paid')->sum('total_price');
-
-            Log::info('Order Stats Generated', [
-                'total_orders' => $totalOrders,
-                'pending_orders' => $pendingOrders,
-                'total_revenue' => $totalRevenue,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'total_orders' => $totalOrders,
-                    'pending_orders' => $pendingOrders,
-                    'paid_orders' => $paidOrders,
-                    'total_revenue' => $totalRevenue,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error in Admin Order Stats', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memuat statistik',
+                'message' => 'Failed to delete order: ' . $e->getMessage()
             ], 500);
         }
     }
