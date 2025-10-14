@@ -17,7 +17,7 @@ import {
     FaChevronDown,
     FaChevronRight,
 } from "react-icons/fa";
-import { logoutUser } from "../../utils/logout";
+import { logoutUser } from "../../utils/logout";  // Pastiin file ini ada!
 
 const SidebarAdmin = () => {
     const location = useLocation();
@@ -30,8 +30,13 @@ const SidebarAdmin = () => {
 
     const handleLogout = async () => {
         setLoading(true);
-        await logoutUser(navigate);
-        setLoading(false);
+        try {
+            await logoutUser(navigate);  // Tambah try-catch kalau perlu
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const toggleMenu = (menu) => {
@@ -41,15 +46,13 @@ const SidebarAdmin = () => {
         }));
     };
 
-    const menuItems = [
+    const menuItems = [  // Pastiin comma di setiap object
         {
             path: "/admin/dashboard",
             name: "Dashboard",
             icon: <FaHome />,
             badge: null
         },
-
-        // ============ PRODUCT MANAGEMENT ============
         {
             name: "Produk & Inventory",
             icon: <FaBook />,
@@ -74,8 +77,6 @@ const SidebarAdmin = () => {
                 },
             ]
         },
-
-        // ============ ORDER MANAGEMENT ============
         {
             name: "Pesanan & Transaksi",
             icon: <FaShoppingCart />,
@@ -86,7 +87,7 @@ const SidebarAdmin = () => {
                     path: "/admin/orders-list",
                     name: "Kelola Pesanan",
                     icon: <FaClipboardList />,
-                    badge: "5" // jumlah pesanan pending
+                    badge: "5"
                 },
                 {
                     path: "/admin/transactions",
@@ -100,30 +101,22 @@ const SidebarAdmin = () => {
                 },
             ]
         },
-
-        // ============ USER MANAGEMENT ============
         {
             path: "/admin/users-manager",
             name: "Manajemen User",
             icon: <FaUsers />,
         },
-
-        // ============ REPORTS & ANALYTICS ============
         {
             path: "/admin/reports",
             name: "Laporan & Analitik",
             icon: <FaChartLine />,
         },
-
-        // ============ NOTIFICATIONS ============
         {
             path: "/admin/notifications",
             name: "Notifikasi",
             icon: <FaBell />,
             badge: "3"
         },
-
-        // ============ SETTINGS ============
         {
             path: "/admin/settings-admin",
             name: "Pengaturan",
@@ -145,7 +138,6 @@ const SidebarAdmin = () => {
                     {menuItems.map((item, index) => (
                         <li key={index} className="mb-1">
                             {item.isParent ? (
-                                // Parent Menu dengan Sub-menu
                                 <>
                                     <button
                                         onClick={() => toggleMenu(item.key)}
@@ -158,7 +150,6 @@ const SidebarAdmin = () => {
                                         {expandedMenus[item.key] ? <FaChevronDown /> : <FaChevronRight />}
                                     </button>
 
-                                    {/* Sub-menu */}
                                     {expandedMenus[item.key] && (
                                         <ul className="ml-4 mt-1 space-y-1">
                                             {item.children.map((child) => (
@@ -187,7 +178,6 @@ const SidebarAdmin = () => {
                                     )}
                                 </>
                             ) : (
-                                // Single Menu Item
                                 <Link
                                     to={item.path}
                                     className={`flex items-center justify-between p-2 rounded-lg transition-colors duration-200 ${
@@ -231,4 +221,4 @@ const SidebarAdmin = () => {
     );
 };
 
-export default SidebarAdmin;
+export default SidebarAdmin;  // Ini harus di akhir, tanpa spasi aneh

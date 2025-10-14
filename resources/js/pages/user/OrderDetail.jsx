@@ -99,7 +99,7 @@ export default function OrderDetail() {
                 </button>
                 <div className="flex-1">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        Detail Pesanan #{order.id}
+                        Detail Pesanan
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
                         Dibuat pada {new Date(order.order_date).toLocaleDateString('id-ID', {
