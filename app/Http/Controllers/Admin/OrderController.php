@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\OrderLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -41,7 +40,8 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $order = Order::with(['user', 'orderItems.book', 'shippingAddress', 'orderLogs.updatedBy'])
+            // hapus pemanggilan relasi orderLogs karena tidak ada
+            $order = Order::with(['user', 'orderItems.book', 'shippingAddress'])
                 ->findOrFail($id);
 
             return response()->json([
@@ -59,13 +59,14 @@ class OrderController extends Controller
 
     /**
      * Update status order (khusus untuk admin)
-     * Admin hanya bisa update dari: paid → shipped → completed
-     * atau cancelled kapan saja. Auto-log ke order_logs.
+     * Allowed transitions: pending -> paid -> shipped -> completed
+     * or cancelled anytime.
      */
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:shipped,completed,cancelled'
+            // tambahkan 'paid' karena admin mungkin perlu set paid
+            'status' => 'required|in:pending,paid,shipped,completed,cancelled'
         ]);
 
         DB::beginTransaction();
@@ -75,9 +76,8 @@ class OrderController extends Controller
             $oldStatus = $order->status;
             $newStatus = $request->status;
 
-            // Validasi: order harus sudah paid untuk bisa di-ship/complete
+            // Validasi: untuk shipped/completed harus sudah paid
             if (in_array($newStatus, ['shipped', 'completed']) && $oldStatus !== 'paid') {
-                DB::rollBack();
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot update status. Order must be paid first.'
@@ -88,8 +88,11 @@ class OrderController extends Controller
             if ($newStatus === 'cancelled' && in_array($oldStatus, ['paid', 'shipped'])) {
                 foreach ($order->orderItems as $item) {
                     $book = $item->book;
-                    $book->stock += $item->quantity;
-                    $book->save();
+                    if ($book) {
+                        // Pastikan field stock ada di model Book
+                        $book->stock = $book->stock + $item->quantity;
+                        $book->save();
+                    }
                 }
             }
 
@@ -97,19 +100,12 @@ class OrderController extends Controller
             $order->status = $newStatus;
             $order->save();
 
-            // Auto-log ke order_logs
-            OrderLog::create([
-                'order_id' => $order->id,
-                'status' => $newStatus,
-                'updated_by' => Auth::id(), // Asumsi auth user adalah admin
-            ]);
-
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order status updated successfully',
-                'data' => $order->load(['user', 'orderItems.book', 'shippingAddress', 'orderLogs'])
+                'data' => $order->load(['user', 'orderItems.book', 'shippingAddress'])
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -140,14 +136,12 @@ class OrderController extends Controller
             $order->notes = $request->notes ?? $order->notes;
             $order->save();
 
-            // Opsional: Log jika ada perubahan tracking (bisa extend OrderLog jika perlu)
-
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tracking and notes updated successfully',
-                'data' => $order->load(['user', 'orderItems.book', 'shippingAddress', 'orderLogs'])
+                'data' => $order->load(['user', 'orderItems.book', 'shippingAddress'])
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -174,11 +168,14 @@ class OrderController extends Controller
             if (in_array($order->status, ['paid', 'shipped'])) {
                 foreach ($order->orderItems as $item) {
                     $book = $item->book;
-                    $book->stock += $item->quantity;
-                    $book->save();
+                    if ($book) {
+                        $book->stock = $book->stock + $item->quantity;
+                        $book->save();
+                    }
                 }
             }
 
+            // Hapus order (pastikan relation cascade/foreign key di DB)
             $order->delete();
 
             DB::commit();

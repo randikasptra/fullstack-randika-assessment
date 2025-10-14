@@ -117,14 +117,7 @@ Route::middleware(['auth:sanctum', 'role:admin,librarian'])->group(function () {
 // ============================================
 Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
 
-    // User Management
-    Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index']);
-        Route::post('/', [UserController::class, 'store']);
-        Route::get('/{id}', [UserController::class, 'edit']);
-        Route::put('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id}', [UserController::class, 'destroy']);
-    });
+
 
     // Admin Order Management
     Route::prefix('orders')->group(function () {
@@ -134,6 +127,17 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
         Route::patch('/{id}/tracking-notes', [AdminOrderController::class, 'updateTrackingAndNotes']);
         Route::delete('/{id}', [AdminOrderController::class, 'destroy']);
     });
+});
+
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+
+    // Users Management (Only Admin)
+    Route::get('/users', [UserController::class, 'index']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::get('/users/{id}', [UserController::class, 'edit']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
 });
 
 // ============================================
@@ -176,11 +180,12 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
     });
 
     // Order Routes (User)
-    Route::prefix('orders')->group(function () {
-        Route::get('/', [OrderController::class, 'index']); // User's orders
-        Route::get('/{id}', [OrderController::class, 'show']); // Order detail
-        Route::post('/{id}/cancel', [OrderController::class, 'cancel']); // Cancel order
-        Route::delete('/{id}', [OrderController::class, 'destroy']); // Delete cancelled order
+    Route::prefix('user')->middleware('auth:sanctum')->group(function () {
+        Route::get('/orders', [OrderController::class, 'index']);
+        Route::get('/orders/{orderId}', [OrderController::class, 'show']);
+        Route::delete('/orders/{orderId}', [OrderController::class, 'destroy']);
+        Route::post('/orders/{orderId}/cancel', [OrderController::class, 'cancel']); // POST untuk idempotent, atau DELETE kalau mau
+        // Optional: Route::patch('/orders/{orderId}/tracking-notes', [OrderController::class, 'updateTrackingAndNotes']);
     });
 });
 
@@ -197,12 +202,4 @@ Route::middleware(['auth:sanctum', 'role:member,admin,librarian'])->prefix('publ
 
     // Public Categories (Read only)
     Route::get('/categories', [CategoryController::class, 'publicIndex']);
-});
-
-Route::get('/test-admin', function (Request $request) {
-    return response()->json([
-        'authenticated' => auth()->check(),
-        'user' => auth()->user(),
-        'token_valid' => true
-    ]);
 });
