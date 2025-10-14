@@ -50,13 +50,24 @@ const orderService = {
         }
     },
 
-    // ✅ Delete order (for cancelled orders only)
+    // Delete order (for cancelled orders only)
     deleteOrder: async (orderId) => {
         try {
             const response = await axios.delete(`${API_URL}/${orderId}`, { headers: getAuthHeaders() });
             return response.data;
         } catch (error) {
             console.error('Delete order error:', error.response?.data || error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // Confirm order (for shipped status only)
+    confirmOrder: async (orderId) => {
+        try {
+            const response = await axios.post(`${API_URL}/${orderId}/confirm`, {}, { headers: getAuthHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Confirm order error:', error.response?.data || error);
             throw error.response?.data || error;
         }
     },

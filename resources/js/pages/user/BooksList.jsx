@@ -25,12 +25,20 @@ export default function BooksList() {
             try {
                 setLoading(true);
                 const response = await bookService.getAllBooks();
-                const booksData = Array.isArray(response) ? response : response.data || [];
+                const booksData = Array.isArray(response)
+                    ? response
+                    : response.data || [];
 
                 if (isMounted) {
                     setBooks(booksData);
                     setFilteredBooks(booksData);
-                    const uniqueCats = [...new Set(booksData.map(book => book.category?.name).filter(name => name))];
+                    const uniqueCats = [
+                        ...new Set(
+                            booksData
+                                .map((book) => book.category?.name)
+                                .filter((name) => name)
+                        ),
+                    ];
                     setCategories(uniqueCats);
                 }
             } catch (error) {
@@ -48,7 +56,7 @@ export default function BooksList() {
         return () => {
             isMounted = false;
             if (window.Echo) {
-                books.forEach(book => {
+                books.forEach((book) => {
                     window.Echo.leaveChannel(`products.${book.id}`);
                 });
             }
@@ -62,25 +70,35 @@ export default function BooksList() {
         const maxRetries = 5;
 
         const setupWebSocket = () => {
-            if (window.Echo.connector.pusher.connection.state === 'connected') {
-                books.forEach(book => {
-                    window.Echo.channel(`products.${book.id}`)
-                        .listen('.stock.updated', (data) => {
-                            setBooks(prevBooks =>
-                                prevBooks.map(b =>
-                                    b.id === data.id ? { ...b, stock: data.stock } : b
+            if (window.Echo.connector.pusher.connection.state === "connected") {
+                books.forEach((book) => {
+                    window.Echo.channel(`products.${book.id}`).listen(
+                        ".stock.updated",
+                        (data) => {
+                            setBooks((prevBooks) =>
+                                prevBooks.map((b) =>
+                                    b.id === data.id
+                                        ? { ...b, stock: data.stock }
+                                        : b
                                 )
                             );
-                            console.log(`Stock updated for ${data.title}: ${data.stock}`);
-                        });
+                            console.log(
+                                `Stock updated for ${data.title}: ${data.stock}`
+                            );
+                        }
+                    );
                     console.log(`Subscribed to channel products.${book.id}`);
                 });
             } else if (retryCount < maxRetries) {
                 retryCount++;
-                console.warn(`WebSocket not connected. Retrying (${retryCount}/${maxRetries})...`);
+                console.warn(
+                    `WebSocket not connected. Retrying (${retryCount}/${maxRetries})...`
+                );
                 setTimeout(setupWebSocket, 1000);
             } else {
-                console.error('Failed to connect to WebSocket after max retries');
+                console.error(
+                    "Failed to connect to WebSocket after max retries"
+                );
             }
         };
 
@@ -88,7 +106,7 @@ export default function BooksList() {
 
         return () => {
             if (window.Echo) {
-                books.forEach(book => {
+                books.forEach((book) => {
                     window.Echo.leaveChannel(`products.${book.id}`);
                 });
             }
@@ -100,17 +118,28 @@ export default function BooksList() {
         if (searchQuery) {
             filtered = filtered.filter(
                 (book) =>
-                    book.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    book.author?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    book.publisher?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    book.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+                    book.title
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                    book.author
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                    book.publisher
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase()) ||
+                    book.category?.name
+                        ?.toLowerCase()
+                        .includes(searchQuery.toLowerCase())
             );
         }
         if (selectedCategory !== "all") {
-            filtered = filtered.filter(book => book.category?.name === selectedCategory);
+            filtered = filtered.filter(
+                (book) => book.category?.name === selectedCategory
+            );
         }
-        filtered = filtered.filter(book =>
-            (book.price || 0) >= minPrice && (book.price || 0) <= maxPrice
+        filtered = filtered.filter(
+            (book) =>
+                (book.price || 0) >= minPrice && (book.price || 0) <= maxPrice
         );
         switch (sortBy) {
             case "price_low":
@@ -124,7 +153,9 @@ export default function BooksList() {
                 break;
             case "newest":
             default:
-                filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                filtered.sort(
+                    (a, b) => new Date(b.created_at) - new Date(a.created_at)
+                );
                 break;
         }
         setFilteredBooks(filtered);
@@ -198,12 +229,16 @@ export default function BooksList() {
                             </label>
                             <select
                                 value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                onChange={(e) =>
+                                    setSelectedCategory(e.target.value)
+                                }
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                             >
                                 <option value="all">Semua Kategori</option>
                                 {categories.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
+                                    <option key={cat} value={cat}>
+                                        {cat}
+                                    </option>
                                 ))}
                             </select>
                         </div>
@@ -212,22 +247,46 @@ export default function BooksList() {
                                 Harga (Rp)
                             </label>
                             <div className="space-y-2">
+                                {/* Input Min */}
                                 <input
-                                    type="number"
-                                    value={minPrice}
-                                    onChange={(e) => setMinPrice(Number(e.target.value) || 0)}
+                                    type="text"
+                                    value={
+                                        minPrice
+                                            ? minPrice.toLocaleString("id-ID")
+                                            : ""
+                                    }
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(
+                                            /\D/g,
+                                            ""
+                                        ); // hapus semua selain angka
+                                        setMinPrice(Number(value) || 0);
+                                    }}
                                     placeholder="Min"
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                 />
+
+                                {/* Input Max */}
                                 <input
-                                    type="number"
-                                    value={maxPrice}
-                                    onChange={(e) => setMaxPrice(Number(e.target.value) || 1000000)}
+                                    type="text"
+                                    value={
+                                        maxPrice
+                                            ? maxPrice.toLocaleString("id-ID")
+                                            : ""
+                                    }
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(
+                                            /\D/g,
+                                            ""
+                                        ); // hapus semua selain angka
+                                        setMaxPrice(Number(value) || 0);
+                                    }}
                                     placeholder="Max"
                                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                                 />
                             </div>
                         </div>
+
                         <div className="mb-6">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Urutkan
@@ -238,8 +297,12 @@ export default function BooksList() {
                                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                             >
                                 <option value="newest">Terbaru</option>
-                                <option value="price_low">Harga Terendah</option>
-                                <option value="price_high">Harga Tertinggi</option>
+                                <option value="price_low">
+                                    Harga Terendah
+                                </option>
+                                <option value="price_high">
+                                    Harga Tertinggi
+                                </option>
                                 <option value="name">Nama A-Z</option>
                             </select>
                         </div>
@@ -306,18 +369,26 @@ export default function BooksList() {
                                                 {book.title}
                                             </h3>
                                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {book.author || "Tidak diketahui"}
+                                                {book.author ||
+                                                    "Tidak diketahui"}
                                             </p>
                                             <p className="text-sm text-gray-500 mb-1">
-                                                {book.publisher || "Tidak diketahui"}{" "}
-                                                {book.year ? `(${book.year})` : ""}
+                                                {book.publisher ||
+                                                    "Tidak diketahui"}{" "}
+                                                {book.year
+                                                    ? `(${book.year})`
+                                                    : ""}
                                             </p>
-                                            {book.category && book.category.name && (
-                                                <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 mb-2">
-                                                    <Tag className="w-3 h-3" />
-                                                    <span>Kategori: {book.category.name}</span>
-                                                </div>
-                                            )}
+                                            {book.category &&
+                                                book.category.name && (
+                                                    <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400 mb-2">
+                                                        <Tag className="w-3 h-3" />
+                                                        <span>
+                                                            Kategori:{" "}
+                                                            {book.category.name}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             <p
                                                 className={`text-sm font-medium mb-2 ${
                                                     book.stock > 0
@@ -330,11 +401,16 @@ export default function BooksList() {
                                                     : "Stok habis"}
                                             </p>
                                             <p className="font-bold text-green-700 text-lg mb-3">
-                                                Rp{" "}
-                                                {book.price
-                                                    ? book.price.toLocaleString("id-ID")
-                                                    : "0"}
+                                                {new Intl.NumberFormat(
+                                                    "id-ID",
+                                                    {
+                                                        style: "currency",
+                                                        currency: "IDR",
+                                                        minimumFractionDigits: 0,
+                                                    }
+                                                ).format(book.price || 0)}
                                             </p>
+
                                             <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
                                                 {book.description ||
                                                     "Tidak ada deskripsi."}

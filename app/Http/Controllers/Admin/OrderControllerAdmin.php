@@ -65,8 +65,7 @@ class OrderControllerAdmin extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            // tambahkan 'paid' karena admin mungkin perlu set paid
-            'status' => 'required|in:pending,paid,shipped,completed,cancelled'
+            'status' => 'required|in:pending,paid,processing,shipped,completed,cancelled'
         ]);
 
         DB::beginTransaction();
@@ -76,27 +75,35 @@ class OrderControllerAdmin extends Controller
             $oldStatus = $order->status;
             $newStatus = $request->status;
 
-            // Validasi: untuk shipped/completed harus sudah paid
-            if (in_array($newStatus, ['shipped', 'completed']) && $oldStatus !== 'paid') {
+            // 🔒 Validasi transisi status
+            $allowedTransitions = [
+                'pending' => ['paid', 'cancelled'],
+                'paid' => ['processing', 'cancelled'],
+                'processing' => ['shipped', 'cancelled'],
+                'shipped' => ['completed'],
+                'completed' => [],
+                'cancelled' => []
+            ];
+
+            if (!in_array($newStatus, $allowedTransitions[$oldStatus])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot update status. Order must be paid first.'
+                    'message' => "Invalid status transition: $oldStatus → $newStatus"
                 ], 400);
             }
 
-            // Jika order di-cancel, kembalikan stok (hanya jika sebelumnya paid/shipped)
-            if ($newStatus === 'cancelled' && in_array($oldStatus, ['paid', 'shipped'])) {
+            // 🔁 Jika di-cancel, kembalikan stok buku
+            if ($newStatus === 'cancelled' && in_array($oldStatus, ['paid', 'processing', 'shipped'])) {
                 foreach ($order->orderItems as $item) {
                     $book = $item->book;
                     if ($book) {
-                        // Pastikan field stock ada di model Book
-                        $book->stock = $book->stock + $item->quantity;
+                        $book->stock += $item->quantity;
                         $book->save();
                     }
                 }
             }
 
-            // Update status
+            // ✅ Update status
             $order->status = $newStatus;
             $order->save();
 
@@ -104,7 +111,7 @@ class OrderControllerAdmin extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order status updated successfully',
+                'message' => "Order status updated from $oldStatus → $newStatus",
                 'data' => $order->load(['user', 'orderItems.book', 'shippingAddress'])
             ]);
         } catch (\Exception $e) {
@@ -117,6 +124,7 @@ class OrderControllerAdmin extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Update tracking number and notes
