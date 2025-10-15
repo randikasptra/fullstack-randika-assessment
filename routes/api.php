@@ -124,24 +124,24 @@ Route::middleware(['auth:sanctum', 'role:admin,librarian'])->group(function () {
 // ============================================
 // 👑 ADMIN ONLY ROUTES
 // ============================================
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
-    // User Management
+    // ✅ User Management (DIPINDAHKAN KELUAR dari prefix 'admin')
     Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index']);
-        Route::post('/', [UserController::class, 'store']);
-        Route::get('/{id}', [UserController::class, 'edit']);
-        Route::put('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id}', [UserController::class, 'destroy']);
+        Route::get('/', [UserController::class, 'index']);        // GET /api/users
+        Route::post('/', [UserController::class, 'store']);       // POST /api/users
+        Route::get('/{id}', [UserController::class, 'edit']);     // GET /api/users/{id}
+        Route::put('/{id}', [UserController::class, 'update']);   // PUT /api/users/{id}
+        Route::delete('/{id}', [UserController::class, 'destroy']); // DELETE /api/users/{id}
     });
 
-
-    Route::prefix('orders')->group(function () {
-        Route::get('/', [OrderControllerAdmin::class, 'index']); // ✅ Semua orders
-        Route::get('/{id}', [OrderControllerAdmin::class, 'show']); // ✅ Detail order by ID
+    // Admin Orders Management
+    Route::prefix('admin/orders')->group(function () {
+        Route::get('/', [OrderControllerAdmin::class, 'index']);
+        Route::get('/{id}', [OrderControllerAdmin::class, 'show']);
         Route::patch('/{id}/status', [OrderControllerAdmin::class, 'updateStatus']);
         Route::patch('/{id}/tracking-notes', [OrderControllerAdmin::class, 'updateTrackingAndNotes']);
-        Route::delete('/{id}', [OrderControllerAdmin::class, 'destroy']); // ✅ Delete order
+        Route::delete('/{id}', [OrderControllerAdmin::class, 'destroy']);
     });
 
 });
