@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
 import {
     BarChart3,
     ShoppingCart,
@@ -9,9 +8,6 @@ import {
     TrendingUp,
     RefreshCw,
 } from "lucide-react";
-=======
-import { BarChart3, ShoppingCart, Package, BookOpen, TrendingUp, RefreshCw } from "lucide-react";
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -20,13 +16,8 @@ import {
     Title,
     Tooltip,
     Legend,
-<<<<<<< HEAD
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-=======
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
 import dashboardService from "../../services/user/dashboardService";
 import UserLayout from "../../layouts/UserLayout";
 
@@ -71,7 +62,6 @@ export default function DashboardUser() {
 
     // Chart data for monthly spending
     const chartData = {
-<<<<<<< HEAD
         labels: data.monthly_spending.map((item) => item.month),
         datasets: [
             {
@@ -79,15 +69,6 @@ export default function DashboardUser() {
                 data: data.monthly_spending.map((item) => parseInt(item.total)),
                 backgroundColor: "rgba(75, 192, 192, 0.6)",
                 borderColor: "rgba(75, 192, 192, 1)",
-=======
-        labels: data.monthly_spending.map(item => item.month),
-        datasets: [
-            {
-                label: 'Total Spending (Rp)',
-                data: data.monthly_spending.map(item => parseInt(item.total)),
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
                 borderWidth: 1,
             },
         ],
@@ -97,40 +78,23 @@ export default function DashboardUser() {
         responsive: true,
         plugins: {
             legend: {
-<<<<<<< HEAD
                 position: "top",
             },
             title: {
                 display: true,
                 text: "Pengeluaran Bulanan (6 Bulan Terakhir)",
-=======
-                position: 'top',
-            },
-            title: {
-                display: true,
-                text: 'Pengeluaran Bulanan (6 Bulan Terakhir)',
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
             },
         },
         scales: {
             y: {
                 beginAtZero: true,
                 ticks: {
-<<<<<<< HEAD
                     callback: function (value) {
                         return "Rp " + value.toLocaleString("id-ID");
                     },
                 },
             },
         },
-=======
-                    callback: function(value) {
-                        return 'Rp ' + value.toLocaleString('id-ID');
-                    }
-                }
-            }
-        }
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
     };
 
     return (
@@ -143,12 +107,8 @@ export default function DashboardUser() {
                             Dashboard
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-2">
-<<<<<<< HEAD
                             Selamat datang kembali! Ini ringkasan aktivitas
                             Anda.
-=======
-                            Selamat datang kembali! Ini ringkasan aktivitas Anda.
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
                         </p>
                     </div>
                     <button
@@ -156,15 +116,11 @@ export default function DashboardUser() {
                         disabled={loading}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                     >
-<<<<<<< HEAD
                         <RefreshCw
                             className={`w-4 h-4 ${
                                 loading ? "animate-spin" : ""
                             }`}
                         />
-=======
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
                         Refresh
                     </button>
                 </div>
@@ -244,13 +200,9 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <BarChart3 className="w-5 h-5 text-blue-600" />
-<<<<<<< HEAD
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                 Pengeluaran Bulanan
                             </h2>
-=======
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pengeluaran Bulanan</h2>
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
                         </div>
                         {loading ? (
                             <div className="h-64 flex items-center justify-center">
@@ -326,7 +278,6 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
                         <div className="flex items-center gap-3 mb-4">
                             <Package className="w-5 h-5 text-blue-600" />
-<<<<<<< HEAD
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                                 Pesanan Terbaru
                             </h2>
@@ -366,21 +317,6 @@ export default function DashboardUser() {
                                                 `/user/order-detail/${order.id}`
                                             )
                                         }
-=======
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pesanan Terbaru</h2>
-                        </div>
-                        <div className="space-y-4">
-                            {data.recent_orders.slice(0, 3).map((order) => (
-                                <div key={order.id} className="flex justify-between items-center p-4 border rounded-lg">
-                                    <div>
-                                        <p className="font-semibold text-gray-900 dark:text-white">Order #{order.id}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {order.orderItems?.length || 0} item(s) - {order.status.toUpperCase()}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => navigate(`/user/order-detail/${order.id}`)}
->>>>>>> f973aa1 (fix(bokklist): redesign booklist)
                                         className="text-blue-600 hover:text-blue-800 text-sm"
                                     >
                                         Lihat Detail
