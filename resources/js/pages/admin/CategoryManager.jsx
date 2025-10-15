@@ -6,14 +6,26 @@ import CategoryTable from "../../components/admin/CategoryTable";
 import CategoryModal from "../../components/admin/CategoryModal";
 import SearchInputCategory from "../../components/admin/SearchInput";
 import * as categoryService from "../../services/admin/categoryService";
+import {
+    Tag,
+    Search,
+    BookOpen,
+    Users,
+    Shield,
+    User,
+    Mail,
+    Hash,
+    FileText,
+} from "lucide-react";
+
 
 const CategoryManager = () => {
     const [categories, setCategories] = useState([]);
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalType, setModalType] = useState('add');
+    const [modalType, setModalType] = useState("add");
     const [editCategory, setEditCategory] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -21,9 +33,13 @@ const CategoryManager = () => {
     }, []);
 
     useEffect(() => {
-        const filtered = categories.filter(cat =>
-            cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase()))
+        const filtered = categories.filter(
+            (cat) =>
+                cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (cat.description &&
+                    cat.description
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()))
         );
         setFilteredCategories(filtered);
     }, [categories, searchTerm]);
@@ -44,13 +60,13 @@ const CategoryManager = () => {
     };
 
     const handleOpenAddModal = () => {
-        setModalType('add');
+        setModalType("add");
         setEditCategory(null);
         setIsModalOpen(true);
     };
 
     const handleOpenEditModal = (category) => {
-        setModalType('edit');
+        setModalType("edit");
         setEditCategory(category);
         setIsModalOpen(true);
     };
@@ -62,7 +78,7 @@ const CategoryManager = () => {
 
     const handleDelete = async (id) => {
         // Cari kategori untuk info konfirmasi
-        const category = categories.find(cat => cat.id === id);
+        const category = categories.find((cat) => cat.id === id);
         const bookCount = category?.books_count || 0;
 
         let confirmMessage = "Yakin ingin menghapus kategori ini?";
@@ -82,7 +98,9 @@ const CategoryManager = () => {
             if (result.status === 422) {
                 toast.error(result.error);
             } else if (result.status === 403) {
-                toast.error("Anda tidak memiliki akses untuk menghapus kategori.");
+                toast.error(
+                    "Anda tidak memiliki akses untuk menghapus kategori."
+                );
             } else {
                 toast.error(result.error);
             }
@@ -92,8 +110,11 @@ const CategoryManager = () => {
     const handleSaveCategory = async (formData) => {
         let result;
 
-        if (modalType === 'edit' && editCategory) {
-            result = await categoryService.updateCategory(editCategory.id, formData);
+        if (modalType === "edit" && editCategory) {
+            result = await categoryService.updateCategory(
+                editCategory.id,
+                formData
+            );
             if (result.success) {
                 toast.success("Kategori berhasil diperbarui!");
             }
@@ -111,7 +132,7 @@ const CategoryManager = () => {
             // Handle validation errors
             if (result.errors) {
                 const errors = Object.values(result.errors).flat();
-                errors.forEach(err => toast.error(err));
+                errors.forEach((err) => toast.error(err));
             } else {
                 toast.error(result.error);
             }
@@ -138,15 +159,20 @@ const CategoryManager = () => {
             </div>
 
             {/* Stats Card */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 text-sm font-medium">Total Kategori</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">{categories.length}</p>
+                            <p className="text-gray-600 text-sm font-medium">
+                                Total Kategori
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                                {categories.length}
+                            </p>
                         </div>
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <span className="text-blue-600 text-lg">📚</span>
+                            <Tag className="w-5 h-5 text-blue-600" />
                         </div>
                     </div>
                 </div>
@@ -154,11 +180,15 @@ const CategoryManager = () => {
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 text-sm font-medium">Tampil di Pencarian</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">{filteredCategories.length}</p>
+                            <p className="text-gray-600 text-sm font-medium">
+                                Tampil di Pencarian
+                            </p>
+                            <p className="text-2xl font-bold text-gray-900 mt-1">
+                                {filteredCategories.length}
+                            </p>
                         </div>
                         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <span className="text-green-600 text-lg">🔍</span>
+                            <Search className="w-5 h-5 text-green-600" />
                         </div>
                     </div>
                 </div>
@@ -166,18 +196,23 @@ const CategoryManager = () => {
                 <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-gray-600 text-sm font-medium">Kategori dengan Buku</p>
+                            <p className="text-gray-600 text-sm font-medium">
+                                Kategori dengan Buku
+                            </p>
                             <p className="text-2xl font-bold text-gray-900 mt-1">
-                                {categories.filter(cat => cat.books_count > 0).length}
+                                {
+                                    categories.filter(
+                                        (cat) => cat.books_count > 0
+                                    ).length
+                                }
                             </p>
                         </div>
                         <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <span className="text-purple-600 text-lg">📖</span>
+                            <BookOpen className="w-5 h-5 text-purple-600" />
                         </div>
                     </div>
                 </div>
             </div>
-
             {/* Action Bar */}
             <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0">
