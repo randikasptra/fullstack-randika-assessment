@@ -1,4 +1,3 @@
-// js/components/admin/BookModal.jsx
 import React, { useState, useEffect } from "react";
 import { FaTimes, FaUpload, FaBook, FaUser, FaBuilding, FaCalendar, FaDollarSign, FaBox, FaTag, FaFileAlt } from "react-icons/fa";
 
@@ -15,9 +14,11 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
         image: null
     });
     const [previewImage, setPreviewImage] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         if (isOpen) {
+            setError(null); // Clear errors when modal opens
             if (type === 'edit' && initialData) {
                 setForm({
                     title: initialData.title || "",
@@ -51,13 +52,16 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setForm({ ...form, [name]: value });
+        // Clear error when user starts typing in title field
+        if (name === 'title' && error) {
+            setError(null);
+        }
     };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setForm({ ...form, image: file });
-
             // Preview gambar
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -67,8 +71,9 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
 
         const submitData = new FormData();
         submitData.append('title', form.title);
@@ -84,7 +89,14 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
             submitData.append('image', form.image);
         }
 
-        onSave(submitData);
+        try {
+            await onSave(submitData);
+            onClose(); // Close modal on successful save
+        } catch (error) {
+            console.error('Error saving book:', error);
+            const errorMessage = error.response?.data?.message || 'Gagal menyimpan buku. Silakan coba lagi.';
+            setError(errorMessage);
+        }
     };
 
     if (!isOpen) return null;
@@ -104,7 +116,10 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             </h2>
                         </div>
                         <button
-                            onClick={onClose}
+                            onClick={() => {
+                                setError(null); // Clear error on close
+                                onClose();
+                            }}
                             className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
                         >
                             <FaTimes className="text-lg" />
@@ -129,9 +144,12 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                                     placeholder="Masukkan judul buku"
                                     value={form.title}
                                     onChange={handleInputChange}
-                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    className={`w-full border ${error ? 'border-red-500' : 'border-slate-300'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                                     required
                                 />
+                                {error && (
+                                    <p className="text-red-500 text-xs mt-1">{error}</p>
+                                )}
                             </div>
 
                             {/* Penulis */}
@@ -297,7 +315,10 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                     <div className="flex justify-end space-x-3">
                         <button
                             type="button"
-                            onClick={onClose}
+                            onClick={() => {
+                                setError(null); // Clear error on close
+                                onClose();
+                            }}
                             className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-100 transition-colors duration-200"
                         >
                             Batal
