@@ -1,4 +1,3 @@
-// resources/js/services/admin/transactionService.js
 import axios from 'axios';
 import { API_BASE_URL } from '../../../config/api';
 
@@ -15,6 +14,7 @@ const getAuthHeaders = () => {
 };
 
 const API_URL = `${API_BASE_URL}/api/admin/transactions`;
+const ORDER_API_URL = `${API_BASE_URL}/api/admin/orders`;
 
 const transactionService = {
     // Get all transactions
@@ -35,6 +35,17 @@ const transactionService = {
             return response.data;
         } catch (error) {
             console.error('Transaction detail error:', error.response?.data || error);
+            throw error.response?.data || error;
+        }
+    },
+
+    // Delete transaction (for cancelled orders)
+    deleteTransaction: async (transactionId) => {
+        try {
+            const response = await axios.delete(`${ORDER_API_URL}/${transactionId}`, { headers: getAuthHeaders() });
+            return response.data;
+        } catch (error) {
+            console.error('Delete transaction error:', error.response?.data || error);
             throw error.response?.data || error;
         }
     },

@@ -15,6 +15,7 @@ import UsersManager from "../pages/admin/UsersManager";
 import SettingsAdmin from "../pages/admin/SettingsAdmin";
 import OrderDetailAdmin from "../pages/admin/OrderDetailAdmin";
 import AdminTransactions from "../pages/admin/AdminTransactions";
+import TransactionDetailAdmin from "../pages/admin/TransactionDetailAdmin";
 
 // Import user pages
 import DashboardUser from "../pages/user/DashboardUser";
@@ -45,6 +46,7 @@ const AppRouter = () => {
                 <Route path="/admin/history-transaction" element={<AdminTransactions />} />
                 {/* Revisi di sini: Tambah :id untuk dynamic route */}
                 <Route path="/admin/detail-orders/:id" element={<OrderDetailAdmin />} />
+                <Route path="/admin/transactions/:id" element={<TransactionDetailAdmin />} />
 
                 {/* User Routes */}
                 <Route path="/user/dashboard" element={<DashboardUser />} />

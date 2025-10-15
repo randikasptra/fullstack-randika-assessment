@@ -9,20 +9,18 @@ class BookUserController extends Controller
 {
     public function index()
     {
+        // ✅ PERBAIKAN: Tampilkan SEMUA buku agar WebSocket bisa subscribe
+        // Filter di frontend saja untuk UI
         $books = Book::with('category')
-            ->where('stock', '>', 0)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Return langsung seperti admin controller
         return response()->json($books);
     }
 
     public function show($id)
     {
         $book = Book::with('category')->findOrFail($id);
-
-        // Return langsung
         return response()->json($book);
     }
 }

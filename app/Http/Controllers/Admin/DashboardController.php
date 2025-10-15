@@ -1,155 +1,86 @@
 <?php
 
-namespace App\Http\Controllers\User;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Book;
+use App\Models\User;
 use App\Models\Cart;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
     /**
-     * Get user dashboard statistics
+     * Get admin dashboard statistics
      */
     public function index(Request $request)
     {
-        $user = $request->user();
+        // Total books
+        $totalBooks = Book::count();
 
-        // Total orders by status
-        $totalOrders = Order::where('user_id', $user->id)->count();
-        $pendingOrders = Order::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->count();
-        $paidOrders = Order::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->count();
-        $cancelledOrders = Order::where('user_id', $user->id)
-            ->where('status', 'cancelled')
-            ->count();
+        // Total users
+        $totalUsers = User::count();
 
-        // Total spending
-        $totalSpending = Order::where('user_id', $user->id)
-            ->where('status', 'paid')
+        // Total orders
+        $totalOrders = Order::count();
+
+        // Revenue today (paid/completed orders)
+        $todayRevenue = Order::whereIn('status', ['paid', 'completed'])
+            ->whereDate('order_date', Carbon::today())
             ->sum('total_price');
 
-        // Cart items count
-        $cartItemsCount = Cart::where('user_id', $user->id)->count();
+        // New users today
+        $newUsersToday = User::whereDate('created_at', Carbon::today())->count();
 
-        // Recent orders (last 5)
-        $recentOrders = Order::with(['orderItems.book'])
-            ->where('user_id', $user->id)
+        // Recent activity: Last 5 orders (or mix with user registrations)
+        $recentOrders = Order::with(['user', 'orderItems.book'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($order) {
+                return [
+                    'type' => 'order',
+                    'title' => 'Pembelian baru - Order #' . $order->id,
+                    'description' => $order->user->name . ' membeli ' . ($order->orderItems->count() ?? 0) . ' item',
+                    'time' => $order->created_at->diffForHumans(),
+                ];
+            });
 
-        // Most purchased books (top 5)
-        $popularBooks = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('books', 'order_items.book_id', '=', 'books.id')
-            ->where('orders.user_id', $user->id)
-            ->where('orders.status', 'paid')
-            ->select(
-                'books.id',
-                'books.title',
-                'books.author',
-                'books.image_url',
-                'books.price',
-                DB::raw('SUM(order_items.quantity) as total_purchased')
-            )
-            ->groupBy('books.id', 'books.title', 'books.author', 'books.image_url', 'books.price')
-            ->orderBy('total_purchased', 'desc')
+        // Recent users (last 5 registrations)
+        $recentUsers = User::orderBy('created_at', 'desc')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'type' => 'user',
+                    'title' => 'Pelanggan baru terdaftar',
+                    'description' => $user->name . ' (' . $user->email . ')',
+                    'time' => $user->created_at->diffForHumans(),
+                ];
+            });
 
-        // Monthly spending (last 6 months)
-        $monthlySpending = Order::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->where('paid_at', '>=', now()->subMonths(6))
-            ->select(
-                DB::raw('DATE_FORMAT(paid_at, "%Y-%m") as month'),
-                DB::raw('SUM(total_price) as total')
-            )
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
-            ->get();
-
-        // Latest available books (suggestions)
-        $suggestedBooks = Book::where('stock', '>', 0)
-            ->orderBy('created_at', 'desc')
-            ->limit(6)
-            ->get();
+        // Combine recent activity (orders + users, limit 5 total)
+        $recentActivity = collect($recentOrders)->merge($recentUsers)
+            ->sortByDesc('created_at')
+            ->take(5)
+            ->values()
+            ->toArray();
 
         return response()->json([
             'success' => true,
             'data' => [
                 'statistics' => [
+                    'total_books' => $totalBooks,
+                    'total_users' => $totalUsers,
                     'total_orders' => $totalOrders,
-                    'pending_orders' => $pendingOrders,
-                    'paid_orders' => $paidOrders,
-                    'cancelled_orders' => $cancelledOrders,
-                    'total_spending' => (int) $totalSpending, // Cast ke int
-                    'cart_items_count' => $cartItemsCount,
+                    'today_revenue' => (float) $todayRevenue,
+                    'new_users_today' => $newUsersToday,
                 ],
-                'recent_orders' => $recentOrders,
-                'popular_books' => $popularBooks,
-                'monthly_spending' => $monthlySpending,
-                'suggested_books' => $suggestedBooks,
+                'recent_activity' => $recentActivity,
             ],
-        ]);
-    }
-
-    /**
-     * Get order statistics by status
-     */
-    public function orderStats(Request $request)
-    {
-        $user = $request->user();
-
-        $stats = Order::where('user_id', $user->id)
-            ->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get()
-            ->keyBy('status')
-            ->map(fn ($item) => $item->count);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'pending' => $stats['pending'] ?? 0,
-                'paid' => $stats['paid'] ?? 0,
-                'cancelled' => $stats['cancelled'] ?? 0,
-                'shipped' => $stats['shipped'] ?? 0,
-                'completed' => $stats['completed'] ?? 0,
-            ],
-        ]);
-    }
-
-    /**
-     * Get spending analytics
-     */
-    public function spendingAnalytics(Request $request)
-    {
-        $user = $request->user();
-        $months = $request->input('months', 12); // Default 12 months
-
-        $analytics = Order::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->where('paid_at', '>=', now()->subMonths($months))
-            ->select(
-                DB::raw('DATE_FORMAT(paid_at, "%Y-%m") as month'),
-                DB::raw('SUM(total_price) as total'),
-                DB::raw('COUNT(*) as order_count')
-            )
-            ->groupBy('month')
-            ->orderBy('month', 'asc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $analytics,
         ]);
     }
 }
