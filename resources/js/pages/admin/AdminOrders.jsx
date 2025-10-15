@@ -21,7 +21,7 @@ import {
     Phone,
     MapPin,
     ChevronDown,
-    Sparkles
+    Sparkles,
 } from "lucide-react";
 import adminOrderService from "../../services/admin/adminOrderService";
 import AdminLayout from "../../layouts/AdminLayout";
@@ -33,7 +33,10 @@ const AdminOrders = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [updatingOrderId, setUpdatingOrderId] = useState(null);
     const [deletingOrderId, setDeletingOrderId] = useState(null);
-    const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+    const [sortConfig, setSortConfig] = useState({
+        key: "created_at",
+        direction: "desc",
+    });
 
     useEffect(() => {
         fetchOrders();
@@ -54,7 +57,12 @@ const AdminOrders = () => {
     };
 
     const handleStatusChange = async (orderId, newStatus) => {
-        if (!window.confirm(`Ubah status menjadi "${getStatusText(newStatus)}"?`)) return;
+        if (
+            !window.confirm(
+                `Ubah status menjadi "${getStatusText(newStatus)}"?`
+            )
+        )
+            return;
 
         try {
             setUpdatingOrderId(orderId);
@@ -74,7 +82,11 @@ const AdminOrders = () => {
     };
 
     const handleDeleteOrder = async (orderId) => {
-        if (!window.confirm("Hapus pesanan ini? Tindakan tidak bisa dibatalkan."))
+        if (
+            !window.confirm(
+                "Hapus pesanan ini? Tindakan tidak bisa dibatalkan."
+            )
+        )
             return;
 
         try {
@@ -94,7 +106,10 @@ const AdminOrders = () => {
     const handleSort = (key) => {
         setSortConfig({
             key,
-            direction: sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+            direction:
+                sortConfig.key === key && sortConfig.direction === "asc"
+                    ? "desc"
+                    : "asc",
         });
     };
 
@@ -110,8 +125,8 @@ const AdminOrders = () => {
             year: "numeric",
             month: "short",
             day: "numeric",
-            hour: '2-digit',
-            minute: '2-digit'
+            hour: "2-digit",
+            minute: "2-digit",
         });
 
     const getStatusText = (status) => {
@@ -121,7 +136,7 @@ const AdminOrders = () => {
             processing: "Diproses",
             shipped: "Dikirim",
             completed: "Selesai",
-            cancelled: "Dibatalkan"
+            cancelled: "Dibatalkan",
         };
         return statusMap[status] || status;
     };
@@ -179,19 +194,27 @@ const AdminOrders = () => {
 
     // Filter dan sort pesanan
     const filteredOrders = orders
-        .filter(order => {
-            const matchesStatus = filterStatus === "semua" || order.status === filterStatus;
-            const matchesSearch = order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                order.id?.toString().includes(searchTerm);
+        .filter((order) => {
+            const matchesStatus =
+                filterStatus === "semua" || order.status === filterStatus;
+            const matchesSearch =
+                order.user?.name
+                    ?.toLowerCase()
+                    .includes(searchTerm.toLowerCase()) ||
+                order.user?.email
+                    ?.toLowerCase()
+                    .includes(searchTerm.toLowerCase()) ||
+                order.id?.toString().includes(searchTerm);
             return matchesStatus && matchesSearch;
         })
         .sort((a, b) => {
-            if (sortConfig.key === 'total_price') {
-                return sortConfig.direction === 'asc' ? a.total_price - b.total_price : b.total_price - a.total_price;
+            if (sortConfig.key === "total_price") {
+                return sortConfig.direction === "asc"
+                    ? a.total_price - b.total_price
+                    : b.total_price - a.total_price;
             }
-            if (sortConfig.key === 'created_at') {
-                return sortConfig.direction === 'asc'
+            if (sortConfig.key === "created_at") {
+                return sortConfig.direction === "asc"
                     ? new Date(a.created_at) - new Date(b.created_at)
                     : new Date(b.created_at) - new Date(a.created_at);
             }
@@ -212,12 +235,15 @@ const AdminOrders = () => {
 
     const statusCounts = {
         semua: orders.length,
-        pending: orders.filter(order => order.status === 'pending').length,
-        paid: orders.filter(order => order.status === 'paid').length,
-        processing: orders.filter(order => order.status === 'processing').length,
-        shipped: orders.filter(order => order.status === 'shipped').length,
-        completed: orders.filter(order => order.status === 'completed').length,
-        cancelled: orders.filter(order => order.status === 'cancelled').length,
+        pending: orders.filter((order) => order.status === "pending").length,
+        paid: orders.filter((order) => order.status === "paid").length,
+        processing: orders.filter((order) => order.status === "processing")
+            .length,
+        shipped: orders.filter((order) => order.status === "shipped").length,
+        completed: orders.filter((order) => order.status === "completed")
+            .length,
+        cancelled: orders.filter((order) => order.status === "cancelled")
+            .length,
     };
 
     const getStatusColor = (status) => {
@@ -276,41 +302,88 @@ const AdminOrders = () => {
                 {/* Stats Cards dengan Gradient */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
                     {[
-                        { key: "semua", label: "Semua", icon: Package, count: statusCounts.semua },
-                        { key: "pending", label: "Menunggu", icon: Clock, count: statusCounts.pending },
-                        { key: "paid", label: "Dibayar", icon: DollarSign, count: statusCounts.paid },
-                        { key: "processing", label: "Diproses", icon: Package, count: statusCounts.processing },
-                        { key: "shipped", label: "Dikirim", icon: Truck, count: statusCounts.shipped },
-                        { key: "completed", label: "Selesai", icon: CheckCircle, count: statusCounts.completed },
-                        { key: "cancelled", label: "Dibatalkan", icon: XCircle, count: statusCounts.cancelled },
+                        {
+                            key: "semua",
+                            label: "Semua",
+                            icon: Package,
+                            count: statusCounts.semua,
+                        },
+                        {
+                            key: "pending",
+                            label: "Menunggu",
+                            icon: Clock,
+                            count: statusCounts.pending,
+                        },
+                        {
+                            key: "paid",
+                            label: "Dibayar",
+                            icon: DollarSign,
+                            count: statusCounts.paid,
+                        },
+                        {
+                            key: "processing",
+                            label: "Diproses",
+                            icon: Package,
+                            count: statusCounts.processing,
+                        },
+                        {
+                            key: "shipped",
+                            label: "Dikirim",
+                            icon: Truck,
+                            count: statusCounts.shipped,
+                        },
+                        {
+                            key: "completed",
+                            label: "Selesai",
+                            icon: CheckCircle,
+                            count: statusCounts.completed,
+                        },
+                        {
+                            key: "cancelled",
+                            label: "Dibatalkan",
+                            icon: XCircle,
+                            count: statusCounts.cancelled,
+                        },
                     ].map(({ key, label, icon: Icon, count }) => (
                         <div
                             key={key}
                             onClick={() => setFilterStatus(key)}
                             className={`bg-white rounded-2xl p-4 cursor-pointer transition-all transform hover:scale-105 shadow-lg border-2 ${
                                 filterStatus === key
-                                    ? `border-transparent bg-gradient-to-r ${getStatusColor(key)} text-white`
+                                    ? `border-transparent bg-gradient-to-r ${getStatusColor(
+                                          key
+                                      )} text-white`
                                     : "border-gray-200 hover:border-blue-300 hover:shadow-xl"
                             }`}
                         >
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className={`text-2xl font-bold ${
-                                        filterStatus === key ? 'text-white' : 'text-gray-900'
-                                    }`}>
+                                    <p
+                                        className={`text-2xl font-bold ${
+                                            filterStatus === key
+                                                ? "text-white"
+                                                : "text-gray-900"
+                                        }`}
+                                    >
                                         {count}
                                     </p>
-                                    <p className={`text-sm mt-2 ${
-                                        filterStatus === key ? 'text-blue-100' : 'text-gray-600'
-                                    }`}>
+                                    <p
+                                        className={`text-sm mt-2 ${
+                                            filterStatus === key
+                                                ? "text-blue-100"
+                                                : "text-gray-600"
+                                        }`}
+                                    >
                                         {label}
                                     </p>
                                 </div>
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                                    filterStatus === key
-                                        ? 'bg-white/20 text-white'
-                                        : 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-600'
-                                }`}>
+                                <div
+                                    className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                        filterStatus === key
+                                            ? "bg-white/20 text-white"
+                                            : "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-600"
+                                    }`}
+                                >
                                     <Icon className="w-6 h-6" />
                                 </div>
                             </div>
@@ -334,10 +407,14 @@ const AdminOrders = () => {
                         <div className="flex items-center gap-4">
                             <div className="flex items-center space-x-3 bg-white px-4 py-3 rounded-xl border border-gray-200 shadow-lg">
                                 <Filter className="text-gray-400 w-5 h-5" />
-                                <span className="text-sm font-medium text-gray-700">Status:</span>
+                                <span className="text-sm font-medium text-gray-700">
+                                    Status:
+                                </span>
                                 <select
                                     value={filterStatus}
-                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                    onChange={(e) =>
+                                        setFilterStatus(e.target.value)
+                                    }
                                     className="border-0 bg-transparent text-sm font-medium text-gray-700 focus:outline-none focus:ring-0"
                                 >
                                     <option value="semua">Semua Status</option>
@@ -346,7 +423,9 @@ const AdminOrders = () => {
                                     <option value="processing">Diproses</option>
                                     <option value="shipped">Dikirim</option>
                                     <option value="completed">Selesai</option>
-                                    <option value="cancelled">Dibatalkan</option>
+                                    <option value="cancelled">
+                                        Dibatalkan
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -369,7 +448,10 @@ const AdminOrders = () => {
                         </div>
                     ) : (
                         displayOrders.map((order) => (
-                            <div key={order.id} className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300">
+                            <div
+                                key={order.id}
+                                className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/20 overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300"
+                            >
                                 {/* Order Header */}
                                 <div className="bg-gradient-to-r from-slate-50 to-gray-100 px-6 py-4 border-b border-gray-200/50">
                                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -381,17 +463,26 @@ const AdminOrders = () => {
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-gray-600">
                                                 <Calendar className="w-4 h-4" />
-                                                <span className="font-medium">{formatDate(order.created_at || order.order_date)}</span>
+                                                <span className="font-medium">
+                                                    {formatDate(
+                                                        order.created_at ||
+                                                            order.order_date
+                                                    )}
+                                                </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             {getStatusBadge(order.status)}
                                             <div className="text-right">
                                                 <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                                                    {formatCurrency(order.total_price || 0)}
+                                                    {formatCurrency(
+                                                        order.total_price || 0
+                                                    )}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
-                                                    {order.order_items?.length || 0} item
+                                                    {order.order_items
+                                                        ?.length || 0}{" "}
+                                                    item
                                                 </div>
                                             </div>
                                         </div>
@@ -410,15 +501,20 @@ const AdminOrders = () => {
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                                                        {order.user?.name?.charAt(0) || 'U'}
+                                                        {order.user?.name?.charAt(
+                                                            0
+                                                        ) || "U"}
                                                     </div>
                                                     <div>
                                                         <div className="font-semibold text-gray-900">
-                                                            {order.user?.name || "Tidak ada"}
+                                                            {order.user?.name ||
+                                                                "Tidak ada"}
                                                         </div>
                                                         <div className="text-sm text-gray-600 flex items-center gap-1">
                                                             <Mail className="w-4 h-4" />
-                                                            {order.user?.email || "Tidak ada"}
+                                                            {order.user
+                                                                ?.email ||
+                                                                "Tidak ada"}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -432,26 +528,51 @@ const AdminOrders = () => {
                                                 Item Pesanan
                                             </h4>
                                             <div className="space-y-3">
-                                                {order.order_items?.slice(0, 2).map((item, index) => (
-                                                    <div key={index} className="flex items-center gap-3">
-                                                        <img
-                                                            src={item.book?.image_url || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c"}
-                                                            alt={item.book?.title}
-                                                            className="w-12 h-16 object-cover rounded-lg shadow-sm"
-                                                        />
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="font-medium text-gray-900 text-sm line-clamp-1">
-                                                                {item.book?.title || 'Produk tidak tersedia'}
-                                                            </div>
-                                                            <div className="text-sm text-gray-600">
-                                                                {item.quantity} × {formatCurrency(item.price || 0)}
+                                                {order.order_items
+                                                    ?.slice(0, 2)
+                                                    .map((item, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex items-center gap-3"
+                                                        >
+                                                            <img
+                                                                src={
+                                                                    item.book
+                                                                        ?.image_url ||
+                                                                    "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c"
+                                                                }
+                                                                alt={
+                                                                    item.book
+                                                                        ?.title
+                                                                }
+                                                                className="w-12 h-16 object-cover rounded-lg shadow-sm"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="font-medium text-gray-900 text-sm line-clamp-1">
+                                                                    {item.book
+                                                                        ?.title ||
+                                                                        "Produk tidak tersedia"}
+                                                                </div>
+                                                                <div className="text-sm text-gray-600">
+                                                                    {
+                                                                        item.quantity
+                                                                    }{" "}
+                                                                    ×{" "}
+                                                                    {formatCurrency(
+                                                                        item.price ||
+                                                                            0
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                                {order.order_items?.length > 2 && (
+                                                    ))}
+                                                {order.order_items?.length >
+                                                    2 && (
                                                     <div className="text-sm text-gray-500 font-medium">
-                                                        +{order.order_items.length - 2} item lainnya
+                                                        +
+                                                        {order.order_items
+                                                            .length - 2}{" "}
+                                                        item lainnya
                                                     </div>
                                                 )}
                                             </div>
@@ -467,14 +588,26 @@ const AdminOrders = () => {
                                                 <div className="space-y-2 text-sm">
                                                     <div className="font-semibold text-gray-900 flex items-center gap-2">
                                                         <User className="w-4 h-4" />
-                                                        {order.shipping_address.recipient_name}
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .recipient_name
+                                                        }
                                                     </div>
                                                     <div className="text-gray-600 flex items-center gap-2">
                                                         <Phone className="w-4 h-4" />
-                                                        {order.shipping_address.phone}
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .phone
+                                                        }
                                                     </div>
                                                     <div className="text-gray-600 line-clamp-2">
-                                                        {order.shipping_address.address}
+                                                        {
+                                                            order
+                                                                .shipping_address
+                                                                .address
+                                                        }
                                                     </div>
                                                 </div>
                                             ) : (
@@ -499,41 +632,71 @@ const AdminOrders = () => {
                                         <div className="flex flex-wrap gap-2">
                                             {order.status === "paid" && (
                                                 <button
-                                                    onClick={() => handleStatusChange(order.id, "processing")}
-                                                    disabled={updatingOrderId === order.id}
+                                                    onClick={() =>
+                                                        handleStatusChange(
+                                                            order.id,
+                                                            "processing"
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        updatingOrderId ===
+                                                        order.id
+                                                    }
                                                     className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                                                 >
                                                     <Package className="w-4 h-4" />
-                                                    {updatingOrderId === order.id ? "Memproses..." : "Proses Pesanan"}
+                                                    {updatingOrderId ===
+                                                    order.id
+                                                        ? "Memproses..."
+                                                        : "Proses Pesanan"}
                                                 </button>
                                             )}
 
                                             {order.status === "processing" && (
                                                 <button
-                                                    onClick={() => handleStatusChange(order.id, "shipped")}
-                                                    disabled={updatingOrderId === order.id}
+                                                    onClick={() =>
+                                                        handleStatusChange(
+                                                            order.id,
+                                                            "shipped"
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        updatingOrderId ===
+                                                        order.id
+                                                    }
                                                     className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                                                 >
                                                     <Truck className="w-4 h-4" />
-                                                    {updatingOrderId === order.id ? "Memperbarui..." : "Tandai Dikirim"}
+                                                    {updatingOrderId ===
+                                                    order.id
+                                                        ? "Memperbarui..."
+                                                        : "Tandai Dikirim"}
                                                 </button>
                                             )}
 
                                             {order.status === "shipped" && (
-                                                <button
-                                                    onClick={() => handleStatusChange(order.id, "completed")}
-                                                    disabled={updatingOrderId === order.id}
-                                                    className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
-                                                >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    {updatingOrderId === order.id ? "Memperbarui..." : "Tandai Selesai"}
-                                                </button>
+                                                <p className="flex items-center gap-2 px-4 py-3 bg-yellow-100 text-yellow-700 rounded-xl font-semibold shadow-sm">
+                                                    <Truck className="w-5 h-5" />
+                                                    Paket Dalam Pengiriman
+                                                </p>
                                             )}
 
-                                            {["pending", "paid", "processing"].includes(order.status) && (
+                                            {[
+                                                "pending",
+                                                "paid",
+                                                "processing",
+                                            ].includes(order.status) && (
                                                 <button
-                                                    onClick={() => handleStatusChange(order.id, "cancelled")}
-                                                    disabled={updatingOrderId === order.id}
+                                                    onClick={() =>
+                                                        handleStatusChange(
+                                                            order.id,
+                                                            "cancelled"
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        updatingOrderId ===
+                                                        order.id
+                                                    }
                                                     className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-gray-500 to-slate-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                                                 >
                                                     <XCircle className="w-4 h-4" />
@@ -541,14 +704,26 @@ const AdminOrders = () => {
                                                 </button>
                                             )}
 
-                                            {["pending", "cancelled"].includes(order.status) && (
+                                            {["pending", "cancelled"].includes(
+                                                order.status
+                                            ) && (
                                                 <button
-                                                    onClick={() => handleDeleteOrder(order.id)}
-                                                    disabled={deletingOrderId === order.id}
+                                                    onClick={() =>
+                                                        handleDeleteOrder(
+                                                            order.id
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        deletingOrderId ===
+                                                        order.id
+                                                    }
                                                     className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
-                                                    {deletingOrderId === order.id ? "Menghapus..." : "Hapus Pesanan"}
+                                                    {deletingOrderId ===
+                                                    order.id
+                                                        ? "Menghapus..."
+                                                        : "Hapus Pesanan"}
                                                 </button>
                                             )}
                                         </div>
