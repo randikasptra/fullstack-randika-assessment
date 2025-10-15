@@ -81,7 +81,6 @@ const SidebarAdmin = () => {
                     path: "/admin/orders-list",
                     name: "Kelola Pesanan",
                     icon: <FaClipboardList className="text-sm" />,
-                    badge: "5"
                 },
                 {
                     path: "/admin/history-transaction",
@@ -95,17 +94,17 @@ const SidebarAdmin = () => {
             name: "Manajemen User",
             icon: <FaUsers className="text-lg" />,
         },
-        {
-            path: "/admin/reports",
-            name: "Laporan & Analitik",
-            icon: <FaChartLine className="text-lg" />,
-        },
-        {
-            path: "/admin/notifications",
-            name: "Notifikasi",
-            icon: <FaBell className="text-lg" />,
-            badge: "3"
-        },
+        // {
+        //     path: "/admin/reports",
+        //     name: "Laporan & Analitik",
+        //     icon: <FaChartLine className="text-lg" />,
+        // },
+        // {
+        //     path: "/admin/notifications",
+        //     name: "Notifikasi",
+        //     icon: <FaBell className="text-lg" />,
+        //     badge: "3"
+        // },
         {
             path: "/admin/settings-admin",
             name: "Pengaturan",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Package, MapPin, CreditCard, Calendar, XCircle, Truck, CheckCircle, Clock } from "lucide-react";
+import { ArrowLeft, Package, MapPin, XCircle, Truck, Clock } from "lucide-react";
 import adminOrderService from "../../services/admin/adminOrderService";
 import AdminLayout from "../../layouts/AdminLayout";
 
@@ -9,17 +9,33 @@ const OrderDetailAdmin = () => {
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState("");
     const [notes, setNotes] = useState("");
     const [newStatus, setNewStatus] = useState("");
 
-    const statusOptions = [
-        { value: "pending", label: "Pending", icon: Clock },
-        { value: "paid", label: "Paid", icon: CreditCard },
-        { value: "shipped", label: "Shipped", icon: Truck },
-        { value: "completed", label: "Completed", icon: CheckCircle },
-        { value: "cancelled", label: "Cancelled", icon: XCircle },
-    ];
+    const getStatusOptions = (currentStatus) => {
+        const statusOptions = [
+            { value: "pending", label: "Pending", icon: Clock },
+            { value: "processing", label: "Processing", icon: Clock },
+            { value: "shipped", label: "Shipped", icon: Truck },
+            { value: "cancelled", label: "Cancelled", icon: XCircle },
+        ];
+
+        // Filter options based on current status and allowed transitions
+        const allowedTransitions = {
+            pending: ["cancelled"],
+            paid: ["processing"],
+            processing: ["shipped", "cancelled"],
+            shipped: [],
+            completed: [],
+            cancelled: [],
+        };
+
+        return statusOptions.filter((opt) =>
+            allowedTransitions[currentStatus]?.includes(opt.value)
+        );
+    };
 
     useEffect(() => {
         fetchOrder();
@@ -29,7 +45,6 @@ const OrderDetailAdmin = () => {
         try {
             setLoading(true);
             const response = await adminOrderService.getOrderById(id);
-            console.log('Full response from API:', response);  // Debug: Liat data ada apa
             if (response.success) {
                 const data = response.data;
                 const transformedOrder = {
@@ -42,11 +57,11 @@ const OrderDetailAdmin = () => {
                 setNotes(data.notes || "");
                 setNewStatus(data.status);
             } else {
-                alert(response.message || 'Gagal load order');
+                alert(response.message || "Gagal load order");
             }
         } catch (error) {
-            console.error('Error fetching admin order:', error);
-            alert(error.message || 'Gagal load order');
+            console.error("Error fetching admin order:", error);
+            alert(error.message || "Gagal load order");
         } finally {
             setLoading(false);
         }
@@ -54,20 +69,37 @@ const OrderDetailAdmin = () => {
 
     const handleStatusUpdate = async (e) => {
         e.preventDefault();
-        if (!newStatus) return;
+        if (!newStatus || newStatus === order.status) return;
         if (!window.confirm(`Ubah status ke "${newStatus}"?`)) return;
 
         try {
             setUpdating(true);
             const response = await adminOrderService.updateOrderStatus(id, newStatus);
             if (response.success) {
-                alert('Status berhasil diubah');
-                fetchOrder();  // Refresh
+                alert("Status berhasil diubah");
+                fetchOrder(); // Refresh
             }
         } catch (error) {
-            alert(error.message || 'Gagal update status');
+            alert(error.message || "Gagal update status");
         } finally {
             setUpdating(false);
+        }
+    };
+
+    const handleDeleteOrder = async () => {
+        if (!window.confirm("Hapus order ini? Tindakan tidak bisa dibatalkan.")) return;
+
+        try {
+            setDeleting(true);
+            const response = await adminOrderService.deleteOrder(id);
+            if (response.success) {
+                alert("Order berhasil dihapus");
+                window.location.href = "/admin/orders-list"; // Redirect to orders list
+            }
+        } catch (error) {
+            alert(error.message || "Gagal hapus order");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -79,25 +111,28 @@ const OrderDetailAdmin = () => {
                 notes: notes,
             });
             if (response.success) {
-                alert('Tracking & notes berhasil disimpan');
+                alert("Tracking & notes berhasil disimpan");
                 fetchOrder();
             }
         } catch (error) {
-            alert(error.message || 'Gagal simpan');
+            alert(error.message || "Gagal simpan");
         }
     };
 
-    const formatCurrency = (amount) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
+    const formatCurrency = (amount) =>
+        new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
-    const formatDate = (date) => new Date(date).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const formatDate = (date) =>
+        new Date(date).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
     const getStatusColor = (status) => {
         const colors = {
-            pending: 'bg-yellow-100 text-yellow-800',
-            paid: 'bg-blue-100 text-blue-800',
-            shipped: 'bg-indigo-100 text-indigo-800',
-            completed: 'bg-green-100 text-green-800',
-            cancelled: 'bg-red-100 text-red-800',
+            pending: "bg-yellow-100 text-yellow-800",
+            paid: "bg-blue-100 text-blue-800",
+            processing: "bg-yellow-200 text-yellow-900",
+            shipped: "bg-indigo-100 text-indigo-800",
+            completed: "bg-green-100 text-green-800",
+            cancelled: "bg-red-100 text-red-800",
         };
         return colors[status] || colors.pending;
     };
@@ -124,6 +159,8 @@ const OrderDetailAdmin = () => {
             </AdminLayout>
         );
     }
+
+    const availableStatusOptions = getStatusOptions(order.status);
 
     return (
         <AdminLayout>
@@ -223,28 +260,42 @@ const OrderDetailAdmin = () => {
                             </div>
 
                             {/* Update Status Form */}
-                            <form onSubmit={handleStatusUpdate} className="space-y-4 mb-6">
-                                <label className="block text-sm font-medium mb-2 text-gray-700">Update Status</label>
-                                <select
-                                    value={newStatus}
-                                    onChange={(e) => setNewStatus(e.target.value)}
-                                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                    disabled={updating}
-                                >
-                                    {statusOptions.map((opt) => (
-                                        <option key={opt.value} value={opt.value}>
-                                            {opt.label}
-                                        </option>
-                                    ))}
-                                </select>
+                            {availableStatusOptions.length > 0 && (
+                                <form onSubmit={handleStatusUpdate} className="space-y-4 mb-6">
+                                    <label className="block text-sm font-medium mb-2 text-gray-700">Update Status</label>
+                                    <select
+                                        value={newStatus}
+                                        onChange={(e) => setNewStatus(e.target.value)}
+                                        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                        disabled={updating}
+                                    >
+                                        <option value={order.status}>{order.status.toUpperCase()} (Current)</option>
+                                        {availableStatusOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        type="submit"
+                                        disabled={updating || newStatus === order.status}
+                                        className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                    >
+                                        {updating ? "Updating..." : "Update Status"}
+                                    </button>
+                                </form>
+                            )}
+
+                            {/* Delete Order Button */}
+                            {["pending", "cancelled"].includes(order.status) && (
                                 <button
-                                    type="submit"
-                                    disabled={updating || newStatus === order.status}
-                                    className="w-full bg-indigo-600 text-white px-4 py-2.5 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                    onClick={handleDeleteOrder}
+                                    disabled={deleting}
+                                    className="w-full bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium mb-6"
                                 >
-                                    {updating ? "Updating..." : "Update Status"}
+                                    {deleting ? "Deleting..." : "Delete Order"}
                                 </button>
-                            </form>
+                            )}
 
                             {/* Tracking & Notes Form */}
                             <form onSubmit={handleSaveTrackingAndNotes} className="space-y-4">
@@ -260,7 +311,7 @@ const OrderDetailAdmin = () => {
                                         />
                                     </div>
                                 )}
-                                <div>
+                                {/* <div>
                                     <label className="block text-sm font-medium mb-2 text-gray-700">Admin Notes</label>
                                     <textarea
                                         value={notes}
@@ -276,7 +327,7 @@ const OrderDetailAdmin = () => {
                                     disabled={!notes && !trackingNumber && order.status !== "shipped"}
                                 >
                                     Save Tracking & Notes
-                                </button>
+                                </button> */}
                             </form>
                         </div>
                     </div>
