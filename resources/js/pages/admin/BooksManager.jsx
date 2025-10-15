@@ -6,12 +6,16 @@ import BookTable from "../../components/admin/BookTable";
 import BookModal from "../../components/admin/BookModal";
 import SearchInput from "../../components/admin/SearchInput";
 import * as bookService from "../../services/admin/bookService";
+<<<<<<< HEAD
 import {
     BookOpenIcon,
     MagnifyingGlassIcon,
     TagIcon,
 } from "@heroicons/react/24/outline";
 import echo from "../../../lib/echo";
+=======
+import { BookOpenIcon, MagnifyingGlassIcon, TagIcon } from '@heroicons/react/24/outline';
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
 
 const BooksManager = () => {
     const [books, setBooks] = useState([]);
@@ -20,10 +24,15 @@ const BooksManager = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState("add");
     const [editBook, setEditBook] = useState(null);
+<<<<<<< HEAD
     const [searchTerm, setSearchTerm] = useState("");
     const [loading, setLoading] = useState(false);
 
     const subscribedChannels = useRef(new Set());
+=======
+    const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
 
     useEffect(() => {
         loadBooks();
@@ -269,7 +278,11 @@ const BooksManager = () => {
 
     return (
         <AdminLayout>
+<<<<<<< HEAD
             {/* Header Section */}
+=======
+            {/* Header Section - Responsive */}
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
             <div className="mb-4 sm:mb-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-3 mb-2">
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
@@ -286,17 +299,26 @@ const BooksManager = () => {
                 </div>
             </div>
 
+<<<<<<< HEAD
             {/* Stats Cards */}
+=======
+            {/* Stats Cards - Enhanced Responsive */}
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
                 <div className="bg-white rounded-xl border border-blue-100 p-3 sm:p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="min-w-0 flex-1">
+<<<<<<< HEAD
                             <p className="text-slate-600 text-xs sm:text-sm font-medium truncate">
                                 Total Buku
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">
                                 {books.length}
                             </p>
+=======
+                            <p className="text-slate-600 text-xs sm:text-sm font-medium truncate">Total Buku</p>
+                            <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">{books.length}</p>
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
                             <BookOpenIcon className="w-4 h-4 sm:w-6 sm:h-6 text-blue-600" />
@@ -307,12 +329,17 @@ const BooksManager = () => {
                 <div className="bg-white rounded-xl border border-cyan-100 p-3 sm:p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="min-w-0 flex-1">
+<<<<<<< HEAD
                             <p className="text-slate-600 text-xs sm:text-sm font-medium truncate">
                                 Hasil Pencarian
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-cyan-600 mt-1">
                                 {filteredBooks.length}
                             </p>
+=======
+                            <p className="text-slate-600 text-xs sm:text-sm font-medium truncate">Hasil Pencarian</p>
+                            <p className="text-lg sm:text-xl font-bold text-cyan-600 mt-1">{filteredBooks.length}</p>
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
                             <MagnifyingGlassIcon className="w-4 h-4 sm:w-6 sm:h-6 text-cyan-600" />
@@ -323,12 +350,17 @@ const BooksManager = () => {
                 <div className="bg-white rounded-xl border border-purple-100 p-3 sm:p-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div className="min-w-0 flex-1">
+<<<<<<< HEAD
                             <p className="text-slate-600 text-xs sm:text-sm font-medium truncate">
                                 Kategori
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-purple-600 mt-1">
                                 {categories.length}
                             </p>
+=======
+                            <p className="text-slate-600 text-xs sm:text-sm font-medium truncate">Kategori</p>
+                            <p className="text-lg sm:text-xl font-bold text-purple-600 mt-1">{categories.length}</p>
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
                             <TagIcon className="w-4 h-4 sm:w-6 sm:h-6 text-purple-600" />
@@ -337,7 +369,11 @@ const BooksManager = () => {
                 </div>
             </div>
 
+<<<<<<< HEAD
             {/* Action Bar */}
+=======
+            {/* Action Bar - Enhanced Responsive */}
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
             <div className="bg-white rounded-xl border border-blue-100 p-3 sm:p-4 mb-6 shadow-sm">
                 <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
                     <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
@@ -357,7 +393,11 @@ const BooksManager = () => {
                 </div>
             </div>
 
+<<<<<<< HEAD
             {/* Books Table */}
+=======
+            {/* Books Table - Ensure Container is Responsive */}
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
             <div className="bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden">
                 {loading ? (
                     <div className="flex justify-center items-center py-8 sm:py-12">

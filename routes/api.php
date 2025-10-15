@@ -5,7 +5,7 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\BookController;
 use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DashboardController; // ⭐ TAMBAHKAN INI
 use App\Http\Controllers\User\CartController;
 use App\Http\Controllers\User\ProfileController;
 use App\Http\Controllers\User\CheckoutController;

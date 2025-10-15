@@ -116,10 +116,14 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                             </h2>
                         </div>
                         <button
+<<<<<<< HEAD
                             onClick={() => {
                                 setError(null); // Clear error on close
                                 onClose();
                             }}
+=======
+                            onClick={onClose}
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
                             className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
                         >
                             <FaTimes className="text-lg" />
@@ -144,12 +148,18 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                                     placeholder="Masukkan judul buku"
                                     value={form.title}
                                     onChange={handleInputChange}
+<<<<<<< HEAD
                                     className={`w-full border ${error ? 'border-red-500' : 'border-slate-300'} rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
                                     required
                                 />
                                 {error && (
                                     <p className="text-red-500 text-xs mt-1">{error}</p>
                                 )}
+=======
+                                    className="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    required
+                                />
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
                             </div>
 
                             {/* Penulis */}
@@ -315,10 +325,14 @@ const BookModal = ({ isOpen, onClose, onSave, type, initialData, categories }) =
                     <div className="flex justify-end space-x-3">
                         <button
                             type="button"
+<<<<<<< HEAD
                             onClick={() => {
                                 setError(null); // Clear error on close
                                 onClose();
                             }}
+=======
+                            onClick={onClose}
+>>>>>>> b5820b4 (fix(admin): redesign booklist view)
                             className="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-xl font-medium hover:bg-slate-100 transition-colors duration-200"
                         >
                             Batal
