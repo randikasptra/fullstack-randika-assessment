@@ -79,39 +79,11 @@ MOURABOOK-STORE/
 ```
 
 ---
-
-## ⚙️ Environment
-
-Contoh konfigurasi `.env` untuk Laravel Reverb & database:
-
-```env
-APP_NAME=MouraBook
-APP_ENV=local
-APP_KEY=base64:...
-APP_DEBUG=true
-APP_URL=http://localhost:8000
-
-DB_CONNECTION=mysql
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE=mourabook
-DB_USERNAME=root
-DB_PASSWORD=
-
-REVERB_APP_ID=app
-REVERB_APP_KEY=key
-REVERB_APP_SECRET=secret
-REVERB_HOST=0.0.0.0
-REVERB_PORT=6001
-```
-
----
-
 ## 💻 Instalasi Manual (Tanpa Docker)
 
 ### 1️⃣ Clone Repository
 ```bash
-git clone https://github.com/username/mourabook-store.git
+git clone https://github.com/randikasptra/fullstack-randika-assessment.git
 cd mourabook-store
 ```
 
