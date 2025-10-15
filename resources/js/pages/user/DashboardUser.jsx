@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, ShoppingCart, Package, BookOpen, TrendingUp, RefreshCw } from "lucide-react";
+import {
+    BarChart3,
+    ShoppingCart,
+    Package,
+    BookOpen,
+    TrendingUp,
+    RefreshCw,
+} from "lucide-react";
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -9,8 +16,8 @@ import {
     Title,
     Tooltip,
     Legend,
-} from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
 import dashboardService from "../../services/user/dashboardService";
 import UserLayout from "../../layouts/UserLayout";
 
@@ -55,13 +62,13 @@ export default function DashboardUser() {
 
     // Chart data for monthly spending
     const chartData = {
-        labels: data.monthly_spending.map(item => item.month),
+        labels: data.monthly_spending.map((item) => item.month),
         datasets: [
             {
-                label: 'Total Spending (Rp)',
-                data: data.monthly_spending.map(item => parseInt(item.total)),
-                backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                borderColor: 'rgba(75, 192, 192, 1)',
+                label: "Total Spending (Rp)",
+                data: data.monthly_spending.map((item) => parseInt(item.total)),
+                backgroundColor: "rgba(75, 192, 192, 0.6)",
+                borderColor: "rgba(75, 192, 192, 1)",
                 borderWidth: 1,
             },
         ],
@@ -71,23 +78,23 @@ export default function DashboardUser() {
         responsive: true,
         plugins: {
             legend: {
-                position: 'top',
+                position: "top",
             },
             title: {
                 display: true,
-                text: 'Pengeluaran Bulanan (6 Bulan Terakhir)',
+                text: "Pengeluaran Bulanan (6 Bulan Terakhir)",
             },
         },
         scales: {
             y: {
                 beginAtZero: true,
                 ticks: {
-                    callback: function(value) {
-                        return 'Rp ' + value.toLocaleString('id-ID');
-                    }
-                }
-            }
-        }
+                    callback: function (value) {
+                        return "Rp " + value.toLocaleString("id-ID");
+                    },
+                },
+            },
+        },
     };
 
     return (
@@ -100,7 +107,8 @@ export default function DashboardUser() {
                             Dashboard
                         </h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-2">
-                            Selamat datang kembali! Ini ringkasan aktivitas Anda.
+                            Selamat datang kembali! Ini ringkasan aktivitas
+                            Anda.
                         </p>
                     </div>
                     <button
@@ -108,7 +116,11 @@ export default function DashboardUser() {
                         disabled={loading}
                         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
                     >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        <RefreshCw
+                            className={`w-4 h-4 ${
+                                loading ? "animate-spin" : ""
+                            }`}
+                        />
                         Refresh
                     </button>
                 </div>
@@ -118,9 +130,13 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Pesanan</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    Total Pesanan
+                                </p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {loading ? "..." : data.statistics.total_orders || 0}
+                                    {loading
+                                        ? "..."
+                                        : data.statistics.total_orders || 0}
                                 </p>
                             </div>
                             <Package className="w-8 h-8 text-blue-600" />
@@ -130,9 +146,15 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Pengeluaran</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    Total Pengeluaran
+                                </p>
                                 <p className="text-2xl font-bold text-green-600">
-                                    Rp {(loading ? 0 : data.statistics.total_spending || 0)?.toLocaleString("id-ID")}
+                                    Rp{" "}
+                                    {(loading
+                                        ? 0
+                                        : data.statistics.total_spending || 0
+                                    )?.toLocaleString("id-ID")}
                                 </p>
                             </div>
                             <BarChart3 className="w-8 h-8 text-green-600" />
@@ -142,9 +164,13 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Item di Keranjang</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    Item di Keranjang
+                                </p>
                                 <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    {loading ? "..." : data.statistics.cart_items_count || 0}
+                                    {loading
+                                        ? "..."
+                                        : data.statistics.cart_items_count || 0}
                                 </p>
                             </div>
                             <ShoppingCart className="w-8 h-8 text-orange-600" />
@@ -154,9 +180,13 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pesanan Berbayar</p>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                    Pesanan Berbayar
+                                </p>
                                 <p className="text-2xl font-bold text-purple-600">
-                                    {loading ? "..." : data.statistics.paid_orders || 0}
+                                    {loading
+                                        ? "..."
+                                        : data.statistics.paid_orders || 0}
                                 </p>
                             </div>
                             <TrendingUp className="w-8 h-8 text-purple-600" />
@@ -170,7 +200,9 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <BarChart3 className="w-5 h-5 text-blue-600" />
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pengeluaran Bulanan</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Pengeluaran Bulanan
+                            </h2>
                         </div>
                         {loading ? (
                             <div className="h-64 flex items-center justify-center">
@@ -181,7 +213,9 @@ export default function DashboardUser() {
                                 <Bar options={chartOptions} data={chartData} />
                             </div>
                         ) : (
-                            <p className="text-gray-500">Belum ada data pengeluaran.</p>
+                            <p className="text-gray-500">
+                                Belum ada data pengeluaran.
+                            </p>
                         )}
                     </div>
 
@@ -190,7 +224,9 @@ export default function DashboardUser() {
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <BookOpen className="w-5 h-5 text-blue-600" />
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Rekomendasi Buku</h2>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    Rekomendasi Buku
+                                </h2>
                             </div>
                             <button
                                 onClick={() => navigate("/user/book-list")}
@@ -200,10 +236,21 @@ export default function DashboardUser() {
                             </button>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            {(loading ? Array.from({ length: 4 }) : data.suggested_books.slice(0, 4)).map((book, index) => (
-                                <div key={book?.id || index} className="text-center">
+                            {(loading
+                                ? Array.from({ length: 4 })
+                                : data.suggested_books.slice(0, 4)
+                            ).map((book, index) => (
+                                <div
+                                    key={book?.id || index}
+                                    className="text-center"
+                                >
                                     <img
-                                        src={loading ? "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f" : (book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f")}
+                                        src={
+                                            loading
+                                                ? "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
+                                                : book.image_url ||
+                                                  "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
+                                        }
                                         alt={book?.title || "Loading..."}
                                         className="w-full h-32 object-cover rounded-lg mb-2 bg-gray-200"
                                     />
@@ -214,7 +261,11 @@ export default function DashboardUser() {
                                         {loading ? "" : book.author}
                                     </p>
                                     <p className="text-sm font-bold text-green-600">
-                                        {loading ? "Rp 0" : `Rp ${book.price.toLocaleString("id-ID")}`}
+                                        {loading
+                                            ? "Rp 0"
+                                            : `Rp ${book.price.toLocaleString(
+                                                  "id-ID"
+                                              )}`}
                                     </p>
                                 </div>
                             ))}
@@ -227,19 +278,45 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
                         <div className="flex items-center gap-3 mb-4">
                             <Package className="w-5 h-5 text-blue-600" />
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pesanan Terbaru</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Pesanan Terbaru
+                            </h2>
                         </div>
                         <div className="space-y-4">
                             {data.recent_orders.slice(0, 3).map((order) => (
-                                <div key={order.id} className="flex justify-between items-center p-4 border rounded-lg">
+                                <div
+                                    key={order.id}
+                                    className="flex justify-between items-center p-4 border rounded-lg"
+                                >
                                     <div>
-                                        <p className="font-semibold text-gray-900 dark:text-white">Order #{order.id}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            {order.orderItems?.length || 0} item(s) - {order.status.toUpperCase()}
+                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                            {order.orderItems &&
+                                            order.orderItems.length > 0
+                                                ? order.orderItems[0].book
+                                                      ?.title || "Tanpa Judul"
+                                                : "Tidak ada buku"}
+                                        </p>
+                                        <p
+                                            className={`text-sm font-medium ${
+                                                order.status === "completed"
+                                                    ? "text-green-600"
+                                                    : order.status === "shipped"
+                                                    ? "text-blue-600"
+                                                    : order.status === "pending"
+                                                    ? "text-yellow-600"
+                                                    : "text-gray-500"
+                                            }`}
+                                        >
+                                            {order.status?.toUpperCase() ||
+                                                "STATUS TIDAK DIKETAHUI"}
                                         </p>
                                     </div>
                                     <button
-                                        onClick={() => navigate(`/user/order-detail/${order.id}`)}
+                                        onClick={() =>
+                                            navigate(
+                                                `/user/order-detail/${order.id}`
+                                            )
+                                        }
                                         className="text-blue-600 hover:text-blue-800 text-sm"
                                     >
                                         Lihat Detail
@@ -263,15 +340,28 @@ export default function DashboardUser() {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <BookOpen className="w-5 h-5 text-blue-600" />
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Buku Favorit Anda</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Buku Favorit Anda
+                            </h2>
                         </div>
                     </div>
                     {loading || data.popular_books.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {(loading ? Array.from({ length: 5 }) : data.popular_books).map((book, index) => (
-                                <div key={book?.id || index} className="text-center">
+                            {(loading
+                                ? Array.from({ length: 5 })
+                                : data.popular_books
+                            ).map((book, index) => (
+                                <div
+                                    key={book?.id || index}
+                                    className="text-center"
+                                >
                                     <img
-                                        src={loading ? "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f" : (book.image_url || "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f")}
+                                        src={
+                                            loading
+                                                ? "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
+                                                : book.image_url ||
+                                                  "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f"
+                                        }
                                         alt={book?.title || "Loading..."}
                                         className="w-full h-32 object-cover rounded-lg mb-2 bg-gray-200"
                                     />
@@ -279,7 +369,9 @@ export default function DashboardUser() {
                                         {loading ? "Memuat..." : book.title}
                                     </h3>
                                     <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                        {loading ? "" : `Dibeli ${book.total_purchased}x`}
+                                        {loading
+                                            ? ""
+                                            : `Dibeli ${book.total_purchased}x`}
                                     </p>
                                 </div>
                             ))}
