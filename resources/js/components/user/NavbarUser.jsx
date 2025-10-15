@@ -53,10 +53,10 @@ export default function NavbarUser({ user }) {
   const isActive = (path) => location.pathname === path;
 
   const navLinks = [
+      { path: "/user/dashboard", label: "Dashboard", icon: <FiHome className="w-4 h-4" /> },
     { path: "/user/book-list", label: "Katalog Buku", icon: <FiBook className="w-4 h-4" /> },
     { path: "/user/cart", label: "Keranjang", icon: <FiShoppingCart className="w-4 h-4" /> },
     { path: "/user/orders", label: "Pesanan Saya", icon: <FiPackage className="w-4 h-4" /> },
-    { path: "/user/dashboard", label: "Dashboard", icon: <FiHome className="w-4 h-4" /> },
     { path: "/user/profile-users", label: "Profile", icon: <FiUser className="w-4 h-4" /> },
   ];
 
