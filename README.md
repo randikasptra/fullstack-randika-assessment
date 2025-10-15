@@ -1,82 +1,70 @@
 # 📚 MouraBook Store
 
-**MouraBook Store** adalah aplikasi **mini e-commerce** untuk penjualan buku yang dikembangkan menggunakan **Laravel 12** dan **React (Vite)**.  
-Proyek ini dirancang untuk menjadi platform modern dan ringan bagi pengguna untuk menjelajahi, membeli, dan mengelola data buku, lengkap dengan fitur **real-time update** menggunakan **WebSocket (Laravel Reverb)**.
+Mini E-Commerce untuk penjualan buku yang dikembangkan menggunakan **Laravel 12** dan **React** (Fullstack).  
+Project ini dirancang untuk menyediakan platform sederhana dan modern bagi pengguna untuk menjelajahi, membeli, serta mengelola data buku.  
 
 ---
 
 ## 🚀 Teknologi yang Digunakan
 
 ### 🧩 Backend
-- ⚙️ **Laravel 12** — RESTful API & manajemen data utama  
-- 🗄️ **MySQL** — Basis data utama  
-- 🔔 **Laravel Reverb / WebSocket** — Komunikasi real-time (notifikasi pesanan, update stok)  
-- 📦 **Composer** — Manajemen dependensi PHP  
+- **Laravel 12** — API utama & manajemen data
+- **MySQL** — Basis data
+- **Laravel Reverb / WebSocket** — Komunikasi real-time (update stok, notifikasi pesanan)
+- **Composer** — Manajemen dependensi PHP
 
 ### ⚛️ Frontend
-- ⚛️ **React (Vite)** — Antarmuka pengguna interaktif  
-- 🎨 **Tailwind CSS** — Styling cepat & responsif  
-- 💡 **Lucide Icons** & **React Icons** — Ikon modern dan ringan  
-- 🔌 **Axios** — Konsumsi API Laravel  
-- 🌐 **React Router DOM** — Navigasi SPA (Single Page Application)  
-
----
-
-## 🧠 Fitur Utama
-
-✅ Autentikasi pengguna (Admin & Customer)  
-✅ CRUD Buku (tambah, edit, hapus, stok otomatis)  
-✅ Sistem keranjang belanja (add to cart, checkout, riwayat)  
-✅ Real-time update stok & status pesanan menggunakan WebSocket  
-✅ Dashboard Admin dengan chart penjualan interaktif  
-✅ Desain modern & responsif (Tailwind)  
-✅ Notifikasi & ikon dengan Lucide / React Icons / Toast
+- **React (Vite)** — Antarmuka pengguna interaktif
+- **Lucide Icons** & **React Icons** — Ikon modern & ringan
+- **Tailwind CSS** — Styling responsif dan cepat
+- **Axios** — Konsumsi API Laravel
 
 ---
 
 ## 🧱 Struktur Proyek
 
 ```
-MOURABOOK-STORE/
-├── backend/ (Laravel 12)
-│   ├── app/                  # Controller, Models, Events, dll
-│   ├── bootstrap/
-│   ├── config/
-│   ├── database/
-│   ├── public/
-│   │   └── uploads/          # Gambar buku
-│   ├── resources/
-│   │   ├── views/
-│   │   ├── css/
-│   │   └── js/               # Jika Laravel Mix digunakan
-│   ├── routes/
-│   │   ├── api.php           # Endpoint utama untuk React
-│   │   └── web.php
-│   ├── tests/
-│   ├── .env.example
-│   └── composer.json
-│
-├── frontend/ (React + Vite)
-│   ├── src/
-│   │   ├── assets/           # Gambar, ikon, dll
-│   │   ├── components/       # Komponen UI reusable
-│   │   ├── context/          # Context API (Auth, Cart)
-│   │   ├── hooks/            # Custom hooks
-│   │   ├── layouts/          # Layout utama (Admin/User)
-│   │   ├── pages/            # Halaman (Dashboard, Buku, Checkout, dll)
-│   │   ├── routes/           # Routing React Router
-│   │   ├── services/         # API calls ke Laravel (axios)
-│   │   ├── utils/            # Helper / formatter
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── public/
-│   ├── index.html
-│   ├── vite.config.js
-│   └── package.json
-│
-├── README.md
-└── LICENSE
+FULLSTACK-RANDIKA-ASSESSMENT/
+├── app/                   # Kode backend Laravel
+├── bootstrap/
+├── config/
+├── database/
+├── public/
+├── resources/
+│   ├── css/               # File CSS
+│   ├── images/            # Asset gambar
+│   └── js/                # Source React App
+│       ├── auth/
+│       ├── components/
+│       ├── layouts/
+│       ├── pages/
+│       ├── routes/
+│       ├── services/
+│       ├── utils/
+│       ├── app.jsx
+│       ├── bootstrap.js
+│       └── main.jsx
+├── lib/
+├── views/
 ```
+
+---
+
+### 3️⃣ Akses Aplikasi
+| Service | URL | Deskripsi |
+|----------|-----|-----------|
+| Laravel API | http://localhost:8000 | Backend API |
+| React Frontend | http://localhost:5173 | Tampilan utama |
+| WebSocket | ws://localhost:6001 | Komunikasi real-time |
+
+---
+
+## ⚙️ Environment
+
+Contoh file `.env` untuk koneksi antar service:
+
+```env
+# Database
 APP_NAME=Laravel
 APP_ENV=local
 APP_KEY=base64:DWongMZ1AtWdmH1va83JzZUi1S9u15HWZ2L0NrjVRUM=
@@ -163,49 +151,19 @@ REVERB_APP_SECRET=uz3dnfyz51nrobaq62al
 REVERB_HOST="localhost"
 REVERB_PORT=8080
 REVERB_SCHEME=http
+```
+
 ---
-## 💻 Instalasi Manual (Tanpa Docker)
 
-### 1️⃣ Clone Repository
-```bash
-git clone https://github.com/randikasptra/fullstack-randika-assessment.git
-cd fullstack-randika-assessment
-```
+## 🧠 Fitur Utama
 
-### 2️⃣ Setup Backend (Laravel)
-composer install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-php artisan serve
-```
-
-Untuk WebSocket:
-```bash
-php artisan reverb:start
-```
-
-### 3️⃣ Setup Frontend (React)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend berjalan di:
-```
-http://localhost:5173
-```
-
-
-
-
-### 3️⃣ Akses Aplikasi
-| Service | URL | Deskripsi |
-|----------|-----|-----------|
-| Laravel API | http://localhost:8000 | Backend API |
-| React Frontend | http://localhost:5173 | Tampilan utama |
-| WebSocket | ws://localhost:6001 | Komunikasi real-time |
+✅ Autentikasi pengguna (Admin & Customer)  
+✅ CRUD Buku (tambah, ubah, hapus, stok otomatis)  
+✅ Sistem keranjang belanja  
+✅ Real-time update stok menggunakan WebSocket  
+✅ Dashboard admin dengan chart interaktif  
+✅ Desain modern & responsif menggunakan Tailwind  
+✅ Notifikasi dan ikon menggunakan Lucide & React Icons  
 
 ---
 
@@ -213,6 +171,7 @@ http://localhost:5173
 
 ### Backend
 ```bash
+composer install
 php artisan migrate
 php artisan serve
 php artisan reverb:start
@@ -226,28 +185,14 @@ npm run dev
 
 ---
 
-## 🧩 WebSocket Integration
-
-Fitur real-time digunakan untuk:
-- Update stok otomatis setiap pesanan dilakukan.
-- Notifikasi pelanggan tentang perubahan status pesanan (“Pesananmu sedang dikirim 📦”).
-- Notifikasi admin saat stok buku menipis.
-
----
-
-## 🧑‍💻 Kontributor
+## ✨ Kontributor
 
 **👨‍💻 Randika Saputra**  
 > Mahasiswa Teknik Informatika | Fullstack Developer Enthusiast  
-> Proyek ini dibuat untuk latihan pengembangan aplikasi fullstack modern menggunakan Laravel + React.  
-
-📧 [saputrarandika857@gmail.com]  
+> Proyek ini dibuat untuk latihan pengembangan aplikasi fullstack modern menggunakan Laravel + React.
 
 ---
 
-## 🪪 Lisensi
+## 📄 Lisensi
 
 Proyek ini bersifat **open-source** dan bebas dikembangkan untuk keperluan pembelajaran.
-
----
-
