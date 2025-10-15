@@ -11,13 +11,15 @@ export const logoutUser = async (navigate, apiUrl = import.meta.env.VITE_API_URL
   }
 
   try {
+    // PERBAIKAN: Tambahkan /api di depan /logout
     await axios.post(
-      `${apiUrl}/logout`,
+      `${apiUrl}/api/logout`,  // ← PERUBAHAN DI SINI
       {},
       {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
+          "Content-Type": "application/json",
         },
       }
     );
