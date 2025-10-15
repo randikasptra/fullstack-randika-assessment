@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, ShoppingCart, Package, BookOpen, TrendingUp } from "lucide-react";
+import { BarChart3, ShoppingCart, Package, BookOpen, TrendingUp, RefreshCw } from "lucide-react";
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import dashboardService from "../../services/user/dashboardService";
 import UserLayout from "../../layouts/UserLayout";
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend
+);
 
 export default function DashboardUser() {
     const [data, setData] = useState({
@@ -34,17 +53,64 @@ export default function DashboardUser() {
         }
     };
 
+    // Chart data for monthly spending
+    const chartData = {
+        labels: data.monthly_spending.map(item => item.month),
+        datasets: [
+            {
+                label: 'Total Spending (Rp)',
+                data: data.monthly_spending.map(item => parseInt(item.total)),
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: 'Pengeluaran Bulanan (6 Bulan Terakhir)',
+            },
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'Rp ' + value.toLocaleString('id-ID');
+                    }
+                }
+            }
+        }
+    };
+
     return (
         <UserLayout>
             <div className="max-w-7xl mx-auto px-4 py-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                        Dashboard
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400 mt-2">
-                        Selamat datang kembali! Ini ringkasan aktivitas Anda.
-                    </p>
+                <div className="mb-8 flex justify-between items-center">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                            Dashboard
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">
+                            Selamat datang kembali! Ini ringkasan aktivitas Anda.
+                        </p>
+                    </div>
+                    <button
+                        onClick={loadDashboardData}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
                 </div>
 
                 {/* Stats Cards */}
@@ -98,42 +164,22 @@ export default function DashboardUser() {
                     </div>
                 </div>
 
-                {/* Suggested Books */}
+                {/* Grid: Chart + Suggested Books */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    {/* Monthly Spending Table */}
+                    {/* Monthly Spending Chart */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <BarChart3 className="w-5 h-5 text-blue-600" />
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pengeluaran Bulanan (6 Bulan Terakhir)</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pengeluaran Bulanan</h2>
                         </div>
-                        {loading || data.monthly_spending.length > 0 ? (
-                            <table className="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                                <thead className="text-xs text-gray-700 uppercase dark:text-gray-300 bg-gray-50 dark:bg-gray-700">
-                                    <tr>
-                                        <th className="px-4 py-2">Bulan</th>
-                                        <th className="px-4 py-2 text-right">Total (Rp)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {loading ? (
-                                        Array.from({ length: 6 }).map((_, index) => (
-                                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                                <td className="px-4 py-2 font-medium">Memuat...</td>
-                                                <td className="px-4 py-2 text-right text-green-600 font-semibold">Rp 0</td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        data.monthly_spending.map((month, index) => (
-                                            <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                                <td className="px-4 py-2 font-medium">{month.month}</td>
-                                                <td className="px-4 py-2 text-right text-green-600 font-semibold">
-                                                    {parseInt(month.total).toLocaleString("id-ID")}
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
+                        {loading ? (
+                            <div className="h-64 flex items-center justify-center">
+                                <p className="text-gray-500">Memuat chart...</p>
+                            </div>
+                        ) : data.monthly_spending.length > 0 ? (
+                            <div className="h-64">
+                                <Bar options={chartOptions} data={chartData} />
+                            </div>
                         ) : (
                             <p className="text-gray-500">Belum ada data pengeluaran.</p>
                         )}
@@ -175,6 +221,42 @@ export default function DashboardUser() {
                         </div>
                     </div>
                 </div>
+
+                {/* Recent Orders */}
+                {data.recent_orders && data.recent_orders.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
+                        <div className="flex items-center gap-3 mb-4">
+                            <Package className="w-5 h-5 text-blue-600" />
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pesanan Terbaru</h2>
+                        </div>
+                        <div className="space-y-4">
+                            {data.recent_orders.slice(0, 3).map((order) => (
+                                <div key={order.id} className="flex justify-between items-center p-4 border rounded-lg">
+                                    <div>
+                                        <p className="font-semibold text-gray-900 dark:text-white">Order #{order.id}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                            {order.orderItems?.length || 0} item(s) - {order.status.toUpperCase()}
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => navigate(`/user/order-detail/${order.id}`)}
+                                        className="text-blue-600 hover:text-blue-800 text-sm"
+                                    >
+                                        Lihat Detail
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 text-center">
+                            <button
+                                onClick={() => navigate("/user/orders")}
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                                Lihat Semua Pesanan
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Popular Books */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
