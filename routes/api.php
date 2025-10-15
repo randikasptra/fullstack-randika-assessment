@@ -12,18 +12,18 @@ use App\Http\Controllers\User\PaymentController;
 use App\Http\Controllers\User\OrderController;
 use App\Http\Controllers\Admin\OrderControllerAdmin;
 use App\Http\Controllers\User\BookUserController;
+use App\Http\Controllers\User\DashboardUserController;
+use App\Http\Controllers\Admin\TransactionHistoryController;
 use App\Events\StockUpdatedEvent;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
 use Cloudinary\Cloudinary;
-use App\Http\Controllers\Admin\TransactionHistoryController;
 
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::get('/transactions', [TransactionHistoryController::class, 'index']);
     Route::get('/transactions/{id}', [TransactionHistoryController::class, 'show']);
 });
-
 
 // ============================================
 // 🧪 TESTING & DEBUG ROUTES (Remove in Production)
@@ -124,24 +124,24 @@ Route::middleware(['auth:sanctum', 'role:admin,librarian'])->group(function () {
 // ============================================
 // 👑 ADMIN ONLY ROUTES
 // ============================================
-Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(function () {
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 
-    // User Management
+    // ✅ User Management (DIPINDAHKAN KELUAR dari prefix 'admin')
     Route::prefix('users')->group(function () {
-        Route::get('/', [UserController::class, 'index']);
-        Route::post('/', [UserController::class, 'store']);
-        Route::get('/{id}', [UserController::class, 'edit']);
-        Route::put('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id}', [UserController::class, 'destroy']);
+        Route::get('/', [UserController::class, 'index']);        // GET /api/users
+        Route::post('/', [UserController::class, 'store']);       // POST /api/users
+        Route::get('/{id}', [UserController::class, 'edit']);     // GET /api/users/{id}
+        Route::put('/{id}', [UserController::class, 'update']);   // PUT /api/users/{id}
+        Route::delete('/{id}', [UserController::class, 'destroy']); // DELETE /api/users/{id}
     });
 
-
-    Route::prefix('orders')->group(function () {
-        Route::get('/', [OrderControllerAdmin::class, 'index']); // ✅ Semua orders
-        Route::get('/{id}', [OrderControllerAdmin::class, 'show']); // ✅ Detail order by ID
+    // Admin Orders Management
+    Route::prefix('admin/orders')->group(function () {
+        Route::get('/', [OrderControllerAdmin::class, 'index']);
+        Route::get('/{id}', [OrderControllerAdmin::class, 'show']);
         Route::patch('/{id}/status', [OrderControllerAdmin::class, 'updateStatus']);
         Route::patch('/{id}/tracking-notes', [OrderControllerAdmin::class, 'updateTrackingAndNotes']);
-        Route::delete('/{id}', [OrderControllerAdmin::class, 'destroy']); // ✅ Delete order
+        Route::delete('/{id}', [OrderControllerAdmin::class, 'destroy']);
     });
 
 });
@@ -150,6 +150,9 @@ Route::middleware(['auth:sanctum', 'role:admin'])->prefix('admin')->group(functi
 // 👤 USER ROUTES (role: user)
 // ============================================
 Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function () {
+
+    // Dashboard Route
+    Route::get('/dashboard', [DashboardUserController::class, 'index']);
 
     // Profile Routes
     Route::prefix('profile')->group(function () {
@@ -194,19 +197,7 @@ Route::middleware(['auth:sanctum', 'role:user'])->prefix('user')->group(function
         Route::post('/{id}/confirm', [OrderController::class, 'confirmOrder']); // Confirm shipped order
     });
 });
-Route::post('/user/simulate-expire/{id}', function ($id) {
-    $order = auth()->user()->orders()->findOrFail($id);
-    if ($order->status === 'pending') {
-        foreach ($order->orderItems as $item) {
-            $item->book->increment('stock', $item->quantity);
-            \Log::info('Triggering StockUpdatedEvent for cancelled order', ['book_id' => $item->book->id, 'stock' => $item->book->stock]);
-            event(new StockUpdatedEvent($item->book));
-        }
-        $order->update(['status' => 'cancelled']);
-        return response()->json(['success' => true, 'message' => 'Order cancelled, stock restored']);
-    }
-    return response()->json(['message' => 'Order cannot be cancelled'], 400);
-})->middleware('auth:sanctum');
+
 // ============================================
 // 📚 MEMBER ROUTES (Read Only - role: member)
 // ============================================
@@ -222,5 +213,21 @@ Route::middleware(['auth:sanctum', 'role:member,admin,librarian'])->prefix('publ
     Route::get('/categories', [CategoryController::class, 'publicIndex']);
 });
 
+// ============================================
+// 🧪 SIMULATION ROUTES (For Testing - Remove in Production)
+// ============================================
+Route::post('/user/simulate-expire/{id}', function ($id) {
+    $order = auth()->user()->orders()->findOrFail($id);
+    if ($order->status === 'pending') {
+        foreach ($order->orderItems as $item) {
+            $item->book->increment('stock', $item->quantity);
+            \Log::info('Triggering StockUpdatedEvent for cancelled order', ['book_id' => $item->book->id, 'stock' => $item->book->stock]);
+            event(new StockUpdatedEvent($item->book));
+        }
+        $order->update(['status' => 'cancelled']);
+        return response()->json(['success' => true, 'message' => 'Order cancelled, stock restored']);
+    }
+    return response()->json(['message' => 'Order cannot be cancelled'], 400);
+})->middleware('auth:sanctum');
 
 Broadcast::routes();
