@@ -14,7 +14,7 @@ export default function GoogleSuccess() {
             token = localStorage.getItem("auth_token");
         }
 
-        console.log("🔑 Token dari URL/localStorage:", token);
+        // console.log("🔑 Token dari URL/localStorage:", token);
 
         if (token) {
             if (window.history.replaceState) {
