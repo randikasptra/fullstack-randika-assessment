@@ -6,6 +6,15 @@ import ProgressSteps from "./ProgressSteps";
 import ActionButtons from "./ActionButtons";
 
 const OrderCard = ({ order, onViewDetail, onCancel, onConfirm, onDelete, actionLoading }) => {
+    // 🛡️ Cegah render kalau order belum siap
+    if (!order || !order.orderItems) {
+        return (
+            <article className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden p-6 text-center text-gray-500">
+                Memuat data pesanan...
+            </article>
+        );
+    }
+
     const handleViewDetail = () => onViewDetail(order.id);
 
     return (
@@ -16,13 +25,16 @@ const OrderCard = ({ order, onViewDetail, onCancel, onConfirm, onDelete, actionL
                     <div className="flex items-center gap-4">
                         <div className="text-sm text-gray-600">
                             <div className="font-medium text-gray-900">
-                                Pesanan • {new Date(order.order_date).toLocaleDateString("id-ID", {
-                                    day: "numeric",
-                                    month: "long",
-                                    year: "numeric",
-                                })}
+                                Pesanan •{" "}
+                                {order.order_date
+                                    ? new Date(order.order_date).toLocaleDateString("id-ID", {
+                                          day: "numeric",
+                                          month: "long",
+                                          year: "numeric",
+                                      })
+                                    : "Tanggal tidak tersedia"}
                             </div>
-                            <div className="text-xs mt-1">{order.orderItems.length} item</div>
+                            <div className="text-xs mt-1">{order.orderItems?.length || 0} item</div>
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
@@ -40,7 +52,7 @@ const OrderCard = ({ order, onViewDetail, onCancel, onConfirm, onDelete, actionL
             </header>
 
             {/* Progress */}
-            {(["pending", "processing", "paid", "shipped", "completed"].includes(order.status)) && (
+            {["pending", "processing", "paid", "shipped", "completed"].includes(order.status) && (
                 <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
                     <ProgressSteps status={order.status} />
                 </div>
@@ -49,22 +61,33 @@ const OrderCard = ({ order, onViewDetail, onCancel, onConfirm, onDelete, actionL
             {/* Items & Address */}
             <div className="p-6">
                 <div className="space-y-4 mb-4">
-                    {order.orderItems.map((item) => (
+                    {order.orderItems?.map((item) => (
                         <div key={item.id} className="flex gap-4 items-start">
                             <img
-                                src={item.book.image_url || "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c"}
-                                alt={item.book.title}
+                                src={
+                                    item.book?.image_url ||
+                                    "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c"
+                                }
+                                alt={item.book?.title || "Buku"}
                                 className="w-16 h-20 object-cover rounded-lg shadow-sm"
                                 loading="lazy"
                             />
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">{item.book.title}</h3>
-                                <p className="text-sm text-gray-600 mb-1">{item.book.author}</p>
-                                <p className="text-sm text-gray-500">{item.quantity} × Rp {item.price.toLocaleString("id-ID")}</p>
+                                <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">
+                                    {item.book?.title || "Judul tidak tersedia"}
+                                </h3>
+                                <p className="text-sm text-gray-600 mb-1">
+                                    {item.book?.author || "Penulis tidak diketahui"}
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    {item.quantity || 0} × Rp{" "}
+                                    {item.price?.toLocaleString("id-ID") || 0}
+                                </p>
                             </div>
                             <div className="text-right">
                                 <p className="font-semibold text-gray-900">
-                                    Rp {(item.price * item.quantity).toLocaleString("id-ID")}
+                                    Rp{" "}
+                                    {(item.price * item.quantity || 0).toLocaleString("id-ID")}
                                 </p>
                             </div>
                         </div>
@@ -79,11 +102,14 @@ const OrderCard = ({ order, onViewDetail, onCancel, onConfirm, onDelete, actionL
                         </h4>
                         <div className="text-sm text-gray-600 space-y-1">
                             <p className="font-medium">
-                                {order.shippingAddress.recipient_name} • {order.shippingAddress.phone}
+                                {order.shippingAddress.recipient_name || "Nama tidak tersedia"} •{" "}
+                                {order.shippingAddress.phone || "-"}
                             </p>
-                            <p>{order.shippingAddress.address}</p>
+                            <p>{order.shippingAddress.address || "Alamat tidak tersedia"}</p>
                             <p>
-                                {order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.postal_code}
+                                {order.shippingAddress.city || ""},{" "}
+                                {order.shippingAddress.province || ""}{" "}
+                                {order.shippingAddress.postal_code || ""}
                             </p>
                         </div>
                     </div>
@@ -94,9 +120,11 @@ const OrderCard = ({ order, onViewDetail, onCancel, onConfirm, onDelete, actionL
                     <div className="flex-1">
                         <p className="text-sm text-gray-600 mb-1">Total Pembayaran</p>
                         <p className="text-2xl font-bold text-green-600">
-                            {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(
-                                order.total_price
-                            )}
+                            {new Intl.NumberFormat("id-ID", {
+                                style: "currency",
+                                currency: "IDR",
+                                minimumFractionDigits: 0,
+                            }).format(order.total_price || 0)}
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -127,10 +155,28 @@ OrderCard.propTypes = {
         id: PropTypes.number,
         status: PropTypes.string,
         order_date: PropTypes.string,
-        orderItems: PropTypes.array,
-        shippingAddress: PropTypes.object,
+        orderItems: PropTypes.arrayOf(
+            PropTypes.shape({
+                id: PropTypes.number,
+                quantity: PropTypes.number,
+                price: PropTypes.number,
+                book: PropTypes.shape({
+                    title: PropTypes.string,
+                    author: PropTypes.string,
+                    image_url: PropTypes.string,
+                }),
+            })
+        ),
+        shippingAddress: PropTypes.shape({
+            recipient_name: PropTypes.string,
+            phone: PropTypes.string,
+            address: PropTypes.string,
+            city: PropTypes.string,
+            province: PropTypes.string,
+            postal_code: PropTypes.string,
+        }),
         total_price: PropTypes.number,
-    }).isRequired,
+    }),
     onViewDetail: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired,
     onConfirm: PropTypes.func.isRequired,
