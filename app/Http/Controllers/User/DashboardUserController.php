@@ -10,63 +10,117 @@ use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class DashboardUserController extends Controller
 {
     /**
-     * Get user's dashboard data
+     * Get user's dashboard data with statistics, orders, books, and analytics.
+     *
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        $userId = auth()->id();
+        try {
+            $this->authorizeUser(); // Ensure authenticated user
 
-        // Statistics
+            $userId = auth()->id();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'statistics' => $this->getStatistics($userId),
+                    'recent_orders' => $this->getRecentOrders($userId),
+                    'popular_books' => $this->getPopularBooks($userId),
+                    'monthly_spending' => $this->getMonthlySpending($userId),
+                    'suggested_books' => $this->getSuggestedBooks($userId),
+                ],
+            ]);
+        } catch (AuthorizationException $e) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        } catch (\Exception $e) {
+            // Log error in production: \Log::error('Dashboard error: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Get user statistics (orders, spending, cart).
+     *
+     * @param int $userId
+     * @return array
+     */
+    private function getStatistics(int $userId): array
+    {
         $totalOrders = Order::where('user_id', $userId)->count();
-        $paidOrders = Order::where('user_id', $userId)->whereIn('status', ['paid', 'completed'])->count();
-        $totalSpending = Order::where('user_id', $userId)->whereIn('status', ['paid', 'completed'])->sum('total_price');
+        $paidOrders = Order::where('user_id', $userId)
+            ->whereIn('status', ['paid', 'completed'])
+            ->count();
+        $totalSpending = Order::where('user_id', $userId)
+            ->whereIn('status', ['paid', 'completed'])
+            ->sum('total_price');
         $cartItemsCount = Cart::where('user_id', $userId)->count();
 
-        $statistics = [
+        return [
             'total_orders' => $totalOrders,
             'total_spending' => (float) $totalSpending,
             'cart_items_count' => $cartItemsCount,
             'paid_orders' => $paidOrders,
         ];
+    }
 
-        // Recent orders (last 5)
-        $recentOrders = Order::with(['orderItems.book', 'shippingAddress'])
+    /**
+     * Get recent orders with limited items.
+     *
+     * @param int $userId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getRecentOrders(int $userId)
+    {
+        return Order::with(['orderItems.book', 'shippingAddress'])
             ->where('user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get()
             ->map(function ($order) {
-                $order->orderItems = $order->orderItems->take(3); // Limit items per order
+                $order->orderItems = $order->orderItems->take(3);
                 return $order;
             });
+    }
 
-        // Popular books (buku yang paling sering dibeli user, last 5)
-        $popularBooks = OrderItem::select('book_id', DB::raw('SUM(quantity) as total_purchased'))
-            ->whereHas('order', function ($query) use ($userId) {
-                $query->where('user_id', $userId)->whereIn('status', ['paid', 'completed']);
-            })
+    /**
+     * Get popular books purchased by user.
+     *
+     * @param int $userId
+     * @return \Illuminate\Support\Collection
+     */
+    private function getPopularBooks(int $userId)
+    {
+        return OrderItem::select('book_id', DB::raw('SUM(quantity) as total_purchased'))
+            ->join('orders', 'order_items.order_id', '=', 'orders.id') // Explicit join to avoid issues
+            ->where('orders.user_id', $userId)
+            ->whereIn('orders.status', ['paid', 'completed'])
             ->groupBy('book_id')
             ->orderBy('total_purchased', 'desc')
             ->limit(5)
             ->with('book')
             ->get()
             ->pluck('book')
-            ->map(function ($book) use ($userId) {
-                $book->total_purchased = OrderItem::where('book_id', $book->id)
-                    ->whereHas('order', function ($q) use ($userId) {
-                        $q->where('user_id', $userId)->whereIn('status', ['paid', 'completed']);
-                    })
-                    ->sum('quantity');
-                return $book;
-            });
+            ->values(); // Avoid map() re-query; use join sum directly
+    }
 
-        // Monthly spending (last 6 months) - REVISI: GROUP BY expression langsung, sort di PHP
+    /**
+     * Get monthly spending for last 6 months, filling gaps with 0.
+     *
+     * @param int $userId
+     * @return array
+     */
+    private function getMonthlySpending(int $userId): array
+    {
         $endDate = Carbon::now();
-        $startDate = $endDate->copy()->subMonths(5); // 6 months including current
+        $startDate = $endDate->copy()->subMonths(5);
 
         $monthlySpending = Order::select(
             DB::raw('DATE_FORMAT(order_date, "%b %Y") as month'),
@@ -79,22 +133,19 @@ class DashboardUserController extends Controller
             ->get()
             ->toArray();
 
-        // Sort by month chronologically (PHP)
+        // Sort chronologically
         usort($monthlySpending, function ($a, $b) {
             $dateA = Carbon::createFromFormat('M Y', $a['month']);
             $dateB = Carbon::createFromFormat('M Y', $b['month']);
             return $dateA->timestamp <=> $dateB->timestamp;
         });
 
-        // Fill missing months with 0
+        // Fill missing months
         $allMonths = [];
         $currentDate = $startDate->copy();
         for ($i = 0; $i < 6; $i++) {
             $monthKey = $currentDate->format('M Y');
-            $allMonths[] = [
-                'month' => $monthKey,
-                'total' => 0,
-            ];
+            $allMonths[] = ['month' => $monthKey, 'total' => 0];
             $currentDate->addMonth();
         }
 
@@ -105,33 +156,45 @@ class DashboardUserController extends Controller
             }
         }
 
-        $monthlySpending = $allMonths;
+        return $allMonths;
+    }
 
-        // Suggested books (random 4 books from categories user has bought, or all if none) - REVISI: Explicit join untuk avoid column error
+    /**
+     * Get suggested books based on user categories.
+     *
+     * @param int $userId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    private function getSuggestedBooks(int $userId)
+    {
         $userCategories = OrderItem::join('books', 'order_items.book_id', '=', 'books.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.user_id', $userId)
             ->whereIn('orders.status', ['paid', 'completed'])
-            ->select('books.category_id')
             ->distinct()
-            ->pluck('category_id');
+            ->pluck('books.category_id');
 
-        $suggestedBooksQuery = Book::where('stock', '>', 0);
+        $query = Book::where('stock', '>', 0);
         if ($userCategories->isNotEmpty()) {
-            $suggestedBooksQuery->whereIn('category_id', $userCategories);
+            $query->whereIn('category_id', $userCategories);
         }
 
-        $suggestedBooks = $suggestedBooksQuery->inRandomOrder()->limit(4)->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'statistics' => $statistics,
-                'recent_orders' => $recentOrders,
-                'popular_books' => $popularBooks,
-                'monthly_spending' => $monthlySpending,
-                'suggested_books' => $suggestedBooks,
-            ],
-        ]);
+        return $query->inRandomOrder()->limit(4)->get();
     }
+
+    /**
+     * Authorize the request for authenticated user only.
+     *
+     * @return void
+     * @throws AuthorizationException
+     */
+    private function authorizeUser(): void
+    {
+        if (!auth()->check()) {
+            throw new AuthorizationException('User not authenticated.');
+        }
+    }
+
+    // Contoh Unit Test (implement di tests/Feature/DashboardUserControllerTest.php)
+    // public function test_dashboard_returns_data_for_authenticated_user() { ... }
 }

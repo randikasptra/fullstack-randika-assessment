@@ -1,49 +1,46 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../../config/api';
 
-const getAuthToken = () => {
-    return localStorage.getItem("auth_token");
-};
+/**
+ * Get auth token from localStorage.
+ * @returns {string|null} Token
+ */
+const getAuthToken = () => localStorage.getItem("auth_token");
 
-const getAuthHeaders = () => {
-    const token = getAuthToken();
-    return {
-        Authorization: `Bearer ${token}`,
-        'Accept': 'application/json',
-    };
-};
+/**
+ * Get auth headers for API requests.
+ * @returns {Object} Headers
+ */
+const getAuthHeaders = () => ({
+    Authorization: `Bearer ${getAuthToken()}`,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+});
 
+/**
+ * Dashboard service for user analytics.
+ */
 const dashboardService = {
-    // Get dashboard data
-    getDashboardData: async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/user/dashboard`, { headers: getAuthHeaders() });
-            return response.data;
-        } catch (error) {
-            console.error('Dashboard error:', error.response?.data || error);
-            throw error.response?.data || error;
-        }
-    },
-
-    // Get order stats (optional, kalo butuh separate)
-    getOrderStats: async () => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/user/dashboard/order-stats`, { headers: getAuthHeaders() });
-            return response.data;
-        } catch (error) {
-            console.error('Order stats error:', error.response?.data || error);
-            throw error.response?.data || error;
-        }
-    },
-
-    // Get spending analytics (optional)
-    getSpendingAnalytics: async (months = 12) => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/user/dashboard/spending-analytics?months=${months}`, { headers: getAuthHeaders() });
-            return response.data;
-        } catch (error) {
-            console.error('Spending analytics error:', error.response?.data || error);
-            throw error.response?.data || error;
+    /**
+     * Get dashboard data with retry logic.
+     * @returns {Promise<Object>} Response data
+     * @throws {Error} If all retries fail
+     */
+    getDashboardData: async (retries = 2) => {
+        for (let i = 0; i <= retries; i++) {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/api/user/dashboard`, {
+                    headers: getAuthHeaders(),
+                    timeout: 5000, // 5s timeout for performance
+                });
+                return response.data;
+            } catch (error) {
+                if (i === retries || error.response?.status === 401) {
+                    throw new Error(error.response?.data?.message || `Request failed after ${retries} retries`);
+                }
+                // Wait 1s before retry
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
         }
     },
 };
