@@ -5,11 +5,11 @@ namespace App\Events;
 use App\Models\Book;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow; // Gunakan ShouldBroadcastNow untuk immediate broadcast
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class StockUpdatedEvent implements ShouldBroadcast
+class StockUpdatedEvent implements ShouldBroadcastNow
 {
     use Dispatchable;
     use InteractsWithSockets;
@@ -22,9 +22,13 @@ class StockUpdatedEvent implements ShouldBroadcast
         $this->book = $book;
     }
 
+    /**
+     * Broadcast ke channel publik untuk semua produk
+     */
     public function broadcastOn(): Channel
     {
-        return new Channel('products.' . $this->book->id);
+        // Gunakan channel publik untuk semua user bisa dengar
+        return new Channel('products');
     }
 
     public function broadcastAs(): string
@@ -38,6 +42,8 @@ class StockUpdatedEvent implements ShouldBroadcast
             'id' => $this->book->id,
             'title' => $this->book->title,
             'stock' => $this->book->stock,
+            'price' => $this->book->price,
+            'updated_at' => $this->book->updated_at->toISOString(),
         ];
     }
 }
