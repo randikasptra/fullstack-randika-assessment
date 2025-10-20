@@ -2,7 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./app";
 import './bootstrap';
-import '../lib/echo';
+// import '../lib/echo';
+import './config/echo';
+
 
 // render react in elemen id="app" in welcome.blade.php
 ReactDOM.createRoot(document.getElementById("app")).render(

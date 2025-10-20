@@ -27,10 +27,65 @@ const BooksManager = () => {
 
     const subscribedChannels = useRef(new Set());
 
+    // Replace SEMUA WebSocket useEffect di BooksManager.jsx
+    // Hapus yang lama, ganti dengan ini:
+
     useEffect(() => {
         loadBooks();
         loadCategories();
-    }, []);
+
+        // ⭐ FIX: Subscribe ke GLOBAL channel 'products' sekali saja
+        console.log("🎧 Admin: Subscribing to global products channel");
+
+        const channel = echo.channel("products");
+
+        channel.subscribed(() => {
+            console.log(
+                "✅ Admin: Successfully subscribed to products channel"
+            );
+        });
+
+        channel.error((error) => {
+            console.error("❌ Admin: WebSocket error:", error);
+        });
+
+        channel.listen(".stock.updated", (data) => {
+            console.log("📦 Admin: Stock updated:", data);
+
+            if (!data.id || typeof data.stock !== "number") {
+                console.warn("⚠️ Invalid stock data:", data);
+                return;
+            }
+
+            // Update state
+            setBooks((prevBooks) => {
+                const updated = Array.isArray(prevBooks)
+                    ? prevBooks.map((b) =>
+                          b.id === data.id
+                              ? { ...b, stock: data.stock, title: data.title }
+                              : b
+                      )
+                    : [];
+                console.log("🔄 Admin: Books updated in state");
+                return updated;
+            });
+
+            // Show toast notification
+            toast.info(
+                `📦 Stock updated: ${data.title} (Stok: ${data.stock})`,
+                {
+                    position: "bottom-right",
+                    autoClose: 3000,
+                }
+            );
+        });
+
+        // Cleanup on unmount
+        return () => {
+            console.log("🧹 Admin: Leaving products channel");
+            echo.leave("products");
+        };
+    }, []); // Empty deps - only run once
 
     // Filter berdasarkan search dan category (client-side)
     useEffect(() => {
@@ -94,7 +149,11 @@ const BooksManager = () => {
                     const updated = Array.isArray(prevBooks)
                         ? prevBooks.map((b) =>
                               b.id === data.id
-                                  ? { ...b, stock: data.stock, title: data.title }
+                                  ? {
+                                        ...b,
+                                        stock: data.stock,
+                                        title: data.title,
+                                    }
                                   : b
                           )
                         : [];

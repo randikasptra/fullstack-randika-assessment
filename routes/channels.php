@@ -2,6 +2,10 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('products.{id}', function ($user, $id) {
-    return true;
+/**
+ * Public channel untuk semua produk
+ * Semua user bisa listen tanpa autentikasi
+ */
+Broadcast::channel('products', function () {
+    return true; // Public channel
 });

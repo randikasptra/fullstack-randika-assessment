@@ -51,46 +51,73 @@ export default function DashboardUser() {
         try {
             setLoading(true);
             const response = await dashboardService.getDashboardData();
+            console.log("📊 Dashboard Data Response:", response); // Debugging
             if (response.success) {
-                setData(response.data);
+                setData({
+                    statistics: response.data.statistics || {},
+                    recent_orders: Array.isArray(response.data.recent_orders)
+                        ? response.data.recent_orders.filter((item) => item && item.id)
+                        : [],
+                    popular_books: Array.isArray(response.data.popular_books)
+                        ? response.data.popular_books.filter((item) => item && item.id)
+                        : [],
+                    monthly_spending: Array.isArray(response.data.monthly_spending)
+                        ? response.data.monthly_spending.filter((item) => item && item.month)
+                        : [],
+                    suggested_books: Array.isArray(response.data.suggested_books)
+                        ? response.data.suggested_books.filter((item) => item && item.id)
+                        : [],
+                });
             } else {
                 throw new Error(response.message || "Gagal memuat data");
             }
         } catch (error) {
-            toast.error(error.message || "Gagal memuat dashboard"); // Gunain toast kayak Profile
-            navigate("/user/dashboard"); // Redirect kalau error parah
+            console.error("❌ Dashboard Load Error:", error);
+            toast.error(error.message || "Gagal memuat dashboard");
+            navigate("/user/dashboard");
         } finally {
             setLoading(false);
         }
     };
 
     // Memoize chart data
-    const chartData = useMemo(() => ({
-        labels: data.monthly_spending.map((item) => item.month),
-        datasets: [
-            {
-                label: "Total Spending (Rp)",
-                data: data.monthly_spending.map((item) => parseInt(item.total)),
-                backgroundColor: "rgba(75, 192, 192, 0.6)",
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-            },
-        ],
-    }), [data.monthly_spending]);
+    const chartData = useMemo(
+        () => ({
+            labels: data.monthly_spending.map((item) => item.month),
+            datasets: [
+                {
+                    label: "Total Spending (Rp)",
+                    data: data.monthly_spending.map((item) => parseInt(item.total)),
+                    backgroundColor: "rgba(75, 192, 192, 0.6)",
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    borderWidth: 1,
+                },
+            ],
+        }),
+        [data.monthly_spending]
+    );
 
-    const chartOptions = useMemo(() => ({
-        responsive: true,
-        plugins: {
-            legend: { position: "top" },
-            title: { display: true, text: "Pengeluaran Bulanan (6 Bulan Terakhir)" },
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: { callback: (value) => "Rp " + value.toLocaleString("id-ID") },
+    const chartOptions = useMemo(
+        () => ({
+            responsive: true,
+            plugins: {
+                legend: { position: "top" },
+                title: {
+                    display: true,
+                    text: "Pengeluaran Bulanan (6 Bulan Terakhir)",
+                },
             },
-        },
-    }), []);
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: (value) => "Rp " + value.toLocaleString("id-ID"),
+                    },
+                },
+            },
+        }),
+        []
+    );
 
     const handleViewOrder = (orderId) => navigate(`/user/order-detail/${orderId}`);
 
@@ -98,7 +125,7 @@ export default function DashboardUser() {
         return (
             <UserLayout>
                 <div className="max-w-7xl mx-auto px-4 py-8">
-                    <LoadingSpinner /> {/* Atau skeleton mirip Profile */}
+                    <LoadingSpinner />
                 </div>
             </UserLayout>
         );
@@ -110,7 +137,9 @@ export default function DashboardUser() {
                 {/* Header */}
                 <div className="mb-8 flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                            Dashboard
+                        </h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-2">
                             Selamat datang kembali! Ini ringkasan aktivitas Anda.
                         </p>
@@ -137,7 +166,9 @@ export default function DashboardUser() {
                     <StatsCard
                         icon={BarChart3}
                         title="Total Pengeluaran"
-                        value={`Rp ${(data.statistics.total_spending || 0)?.toLocaleString("id-ID")}`}
+                        value={`Rp ${(data.statistics.total_spending || 0)?.toLocaleString(
+                            "id-ID"
+                        )}`}
                         color="text-green-600"
                     />
                     <StatsCard
@@ -160,7 +191,9 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <BarChart3 className="w-5 h-5 text-blue-600" aria-hidden="true" />
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pengeluaran Bulanan</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Pengeluaran Bulanan
+                            </h2>
                         </div>
                         {data.monthly_spending.length > 0 ? (
                             <div className="h-64">
@@ -176,7 +209,9 @@ export default function DashboardUser() {
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <BookOpen className="w-5 h-5 text-blue-600" aria-hidden="true" />
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Rekomendasi Buku</h2>
+                                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                    Rekomendasi Buku
+                                </h2>
                             </div>
                             <button
                                 onClick={() => navigate("/user/book-list")}
@@ -187,9 +222,16 @@ export default function DashboardUser() {
                             </button>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
-                            {data.suggested_books.slice(0, 4).map((book) => (
-                                <BookGridItem key={book.id} book={book} isPopular={false} />
-                            ))}
+                            {data.suggested_books
+                                ?.filter((book) => book && book.id)
+                                .slice(0, 4)
+                                .map((book) => (
+                                    <BookGridItem
+                                        key={book.id}
+                                        book={book}
+                                        isPopular={false}
+                                    />
+                                ))}
                         </div>
                     </div>
                 </div>
@@ -199,16 +241,21 @@ export default function DashboardUser() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
                         <div className="flex items-center gap-3 mb-4">
                             <Package className="w-5 h-5 text-blue-600" aria-hidden="true" />
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Pesanan Terbaru</h2>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                Pesanan Terbaru
+                            </h2>
                         </div>
                         <div className="space-y-4">
-                            {data.recent_orders.slice(0, 3).map((order) => (
-                                <RecentOrderItem
-                                    key={order.id}
-                                    order={order}
-                                    onView={() => handleViewOrder(order.id)}
-                                />
-                            ))}
+                            {data.recent_orders
+                                ?.filter((order) => order && order.id)
+                                .slice(0, 3)
+                                .map((order) => (
+                                    <RecentOrderItem
+                                        key={order.id}
+                                        order={order}
+                                        onView={() => handleViewOrder(order.id)}
+                                    />
+                                ))}
                         </div>
                         <div className="mt-4 text-center">
                             <button
@@ -226,13 +273,21 @@ export default function DashboardUser() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
                     <div className="flex items-center gap-3 mb-4">
                         <BookOpen className="w-5 h-5 text-blue-600" aria-hidden="true" />
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Buku Favorit Anda</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                            Buku Favorit Anda
+                        </h2>
                     </div>
                     {data.popular_books.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {data.popular_books.map((book) => (
-                                <BookGridItem key={book.id} book={book} isPopular={true} />
-                            ))}
+                            {data.popular_books
+                                ?.filter((book) => book && book.id)
+                                .map((book) => (
+                                    <BookGridItem
+                                        key={book.id}
+                                        book={book}
+                                        isPopular={true}
+                                    />
+                                ))}
                         </div>
                     ) : (
                         <p className="text-gray-500">Belum ada buku favorit.</p>

@@ -1,31 +1,16 @@
+// resources/js/services/user/bookService.js
 import axios from 'axios';
 import { API_BASE_URL } from '../../../config/api';
+import echo from '../../config/echo';
 
-/**
- * Get auth token.
- * @returns {string|null} Token
- */
 const getAuthToken = () => localStorage.getItem("auth_token");
 
-/**
- * Get auth headers.
- * @returns {Object} Headers
- */
 const getAuthHeaders = () => ({
     Authorization: `Bearer ${getAuthToken()}`,
     'Accept': 'application/json',
 });
 
-/**
- * Book service for user book operations.
- */
 const bookService = {
-    /**
-     * Get all books with filters/pagination.
-     * @param {Object} params - { q, category, min_price, max_price, sort_by, page, per_page }
-     * @returns {Promise<Object>} { data: [], meta: {} }
-     * @throws {Error} On failure
-     */
     getAllBooks: async (params = {}) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/api/user/books`, {
@@ -43,12 +28,6 @@ const bookService = {
         }
     },
 
-    /**
-     * Get book by ID.
-     * @param {number} bookId
-     * @returns {Promise<Object>} Book data
-     * @throws {Error} On failure
-     */
     getBookById: async (bookId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/api/user/books/${bookId}`, {
@@ -62,6 +41,34 @@ const bookService = {
             }
             throw new Error(error.response?.data?.message || 'Failed to fetch book');
         }
+    },
+
+    /**
+     * Subscribe to ALL products stock updates (Global Channel)
+     * @param {Function} callback - (updatedBook) => {}
+     * @returns {Object} Echo channel
+     */
+    subscribeToStockUpdates: (callback) => {
+        console.log('🔔 Subscribing to global products channel');
+
+        const channel = echo.channel('products');
+
+        channel.listen('.stock.updated', (data) => {
+            console.log('📦 Stock updated:', data);
+            if (typeof callback === 'function') {
+                callback(data);
+            }
+        });
+
+        return channel;
+    },
+
+    /**
+     * Unsubscribe from stock updates
+     */
+    unsubscribeFromStockUpdates: () => {
+        echo.leaveChannel('products');
+        console.log('👋 Unsubscribed from products channel');
     },
 };
 

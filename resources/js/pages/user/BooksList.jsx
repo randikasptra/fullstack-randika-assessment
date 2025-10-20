@@ -41,6 +41,7 @@ export default function BooksList() {
 
     const navigate = useNavigate();
 
+
     useEffect(() => {
         let isMounted = true;
 
@@ -76,15 +77,35 @@ export default function BooksList() {
 
         loadBooks();
 
+        // ⭐ FIX: Subscribe ke GLOBAL channel 'products' bukan per-book
+        console.log("🎧 User: Subscribing to global products channel");
+
+        const channel = window.Echo.channel("products");
+
+        channel.subscribed(() => {
+            console.log("✅ User: Successfully subscribed to products channel");
+        });
+
+        channel.listen(".stock.updated", (data) => {
+            console.log("📦 User: Stock updated:", data);
+
+            // Update state dengan stock baru
+            setBooks((prevBooks) =>
+                prevBooks.map((book) =>
+                    book.id === data.id ? { ...book, stock: data.stock } : book
+                )
+            );
+        });
+
+        // Cleanup on unmount
         return () => {
             isMounted = false;
+            console.log("🧹 User: Leaving products channel");
             if (window.Echo) {
-                books.forEach((book) => {
-                    window.Echo.leaveChannel(`products.${book.id}`);
-                });
+                window.Echo.leave("products");
             }
         };
-    }, []);
+    }, []); // Empty deps - only run once
 
     useEffect(() => {
         if (!books.length || !window.Echo) return;
