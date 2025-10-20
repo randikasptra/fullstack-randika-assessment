@@ -121,16 +121,24 @@ export default function Orders() {
       shipped: <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">Dikirim</span>,
       completed: <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">Selesai</span>,
       cancelled: <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">Dibatalkan</span>,
+      expired: <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">Kedaluwarsa</span>,
     };
     return map[status] || <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">Tidak Diketahui</span>;
   };
 
   const getProgressSteps = (status) => {
-    const steps = ["pending", "processing", "paid", "shipped", "completed"];
+    const steps = ["pending", "paid", "processing", "shipped", "completed"];
     return (
       <div className="flex justify-between w-full max-w-2xl mx-auto">
         {steps.map((step, idx) => {
           const done = steps.indexOf(status) >= idx;
+          const labelMap = {
+            pending: "Menunggu Pembayaran",
+            paid: "Dibayar",
+            processing: "Diproses",
+            shipped: "Dikirim",
+            completed: "Selesai",
+          };
           return (
             <div key={step} className="flex flex-col items-center text-xs">
               <div
@@ -141,7 +149,7 @@ export default function Orders() {
                 {done ? <CheckCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
               </div>
               <span className={`mt-2 ${done ? "text-green-600" : "text-gray-400"}`}>
-                {step.charAt(0).toUpperCase() + step.slice(1)}
+                {labelMap[step]}
               </span>
             </div>
           );
@@ -153,6 +161,7 @@ export default function Orders() {
   const getActionButtons = (order) => {
     switch (order.status) {
       case "pending":
+      case "paid":
         return (
           <button
             onClick={() => onCancelOrder(order.id)}
@@ -174,6 +183,7 @@ export default function Orders() {
         );
       case "completed":
       case "cancelled":
+      case "expired":
         return (
           <button
             onClick={() => onDeleteOrder(order.id)}
@@ -228,8 +238,8 @@ export default function Orders() {
               {[
                 { key: "all", label: "Semua" },
                 { key: "pending", label: "Belum Bayar" },
-                { key: "processing", label: "Diproses" },
                 { key: "paid", label: "Dibayar" },
+                { key: "processing", label: "Diproses" },
                 { key: "shipped", label: "Dikirim" },
                 { key: "completed", label: "Selesai" },
                 { key: "cancelled", label: "Dibatalkan" },

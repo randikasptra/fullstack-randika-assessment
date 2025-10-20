@@ -10,6 +10,10 @@ import {
 import adminDashboardService from "../../services/admin/adminDashboardService";
 import AdminLayout from "../../layouts/AdminLayout";
 
+// Components from subfolder
+import StatsCard from "../../components/admin/dashboard/StatsCard";
+import ActivityItem from "../../components/admin/dashboard/ActivityItem";
+
 const DashboardAdmin = () => {
     const [data, setData] = useState({
         statistics: {
@@ -18,8 +22,10 @@ const DashboardAdmin = () => {
             total_orders: 0,
             today_revenue: 0,
             new_users_today: 0,
+            low_stock_books: 0, // Tambah dari backend
         },
         recent_activity: [],
+        monthly_revenue: [], // Untuk chart
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -41,14 +47,20 @@ const DashboardAdmin = () => {
             // Check if response has success flag
             if (response && response.success) {
                 console.log("✅ Success! Setting data:", response.data);
-                setData(response.data);
+                setData({
+                    ...response.data,
+                    statistics: { ...response.data.statistics, low_stock_books: response.data.statistics.low_stock_books || 0 },
+                });
             } else if (response && response.data) {
                 // Some APIs return data directly without success flag
                 console.log(
                     "⚠️ No success flag, but data exists:",
                     response.data
                 );
-                setData(response.data);
+                setData({
+                    ...response.data,
+                    statistics: { ...response.data.statistics, low_stock_books: response.data.statistics.low_stock_books || 0 },
+                });
             } else {
                 console.log("❌ Invalid response format:", response);
                 setError("Format response tidak valid");
@@ -134,89 +146,51 @@ const DashboardAdmin = () => {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                                     {/* Total Buku */}
-                                    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-                                        <div className="flex items-center">
-                                            <div className="p-3 bg-blue-100 rounded-lg">
-                                                <FaBook className="text-2xl text-blue-600" />
-                                            </div>
-                                            <div className="ml-4">
-                                                <h3 className="text-sm font-medium text-gray-600">
-                                                    Total Buku
-                                                </h3>
-                                                <p className="text-2xl font-bold text-gray-900">
-                                                    {stats.total_books}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <StatsCard
+                                        icon={FaBook}
+                                        title="Total Buku"
+                                        value={stats.total_books}
+                                        color="blue"
+                                    />
 
                                     {/* Total User */}
-                                    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-                                        <div className="flex items-center">
-                                            <div className="p-3 bg-indigo-100 rounded-lg">
-                                                <FaUsers className="text-2xl text-indigo-600" />
-                                            </div>
-                                            <div className="ml-4">
-                                                <h3 className="text-sm font-medium text-gray-600">
-                                                    Total User
-                                                </h3>
-                                                <p className="text-2xl font-bold text-gray-900">
-                                                    {stats.total_users}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <StatsCard
+                                        icon={FaUsers}
+                                        title="Total User"
+                                        value={stats.total_users}
+                                        color="indigo"
+                                    />
 
                                     {/* Total Orders */}
-                                    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-                                        <div className="flex items-center">
-                                            <div className="p-3 bg-green-100 rounded-lg">
-                                                <FaShoppingCart className="text-2xl text-green-600" />
-                                            </div>
-                                            <div className="ml-4">
-                                                <h3 className="text-sm font-medium text-gray-600">
-                                                    Total Orders
-                                                </h3>
-                                                <p className="text-2xl font-bold text-gray-900">
-                                                    {stats.total_orders}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <StatsCard
+                                        icon={FaShoppingCart}
+                                        title="Total Orders"
+                                        value={stats.total_orders}
+                                        color="green"
+                                    />
 
                                     {/* Penjualan Hari Ini */}
-                                    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-                                        <div className="flex items-center">
-                                            <div className="p-3 bg-yellow-100 rounded-lg">
-                                                <FaMoneyBillWave className="text-2xl text-yellow-600" />
-                                            </div>
-                                            <div className="ml-4">
-                                                <h3 className="text-sm font-medium text-gray-600">
-                                                    Revenue Hari Ini
-                                                </h3>
-                                                <p className="text-lg font-bold text-gray-900">
-                                                    {formatCurrency(stats.today_revenue)}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <StatsCard
+                                        icon={FaMoneyBillWave}
+                                        title="Revenue Hari Ini"
+                                        value={formatCurrency(stats.today_revenue)}
+                                        color="yellow"
+                                    />
 
                                     {/* Pelanggan Baru */}
-                                    <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow">
-                                        <div className="flex items-center">
-                                            <div className="p-3 bg-purple-100 rounded-lg">
-                                                <FaUserPlus className="text-2xl text-purple-600" />
-                                            </div>
-                                            <div className="ml-4">
-                                                <h3 className="text-sm font-medium text-gray-600">
-                                                    User Baru Hari Ini
-                                                </h3>
-                                                <p className="text-2xl font-bold text-gray-900">
-                                                    {stats.new_users_today}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <StatsCard
+                                        icon={FaUserPlus}
+                                        title="User Baru Hari Ini"
+                                        value={stats.new_users_today}
+                                        color="purple"
+                                    />
+                                </div>
+                            )}
+                            {stats.low_stock_books > 0 && (
+                                <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                                    <p className="text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                                        ⚠️ {stats.low_stock_books} buku stok rendah. <button onClick={() => {/* Navigate */ }} className="underline">Cek sekarang</button>
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -252,29 +226,10 @@ const DashboardAdmin = () => {
                                 ) : data.recent_activity.length > 0 ? (
                                     <div className="space-y-3">
                                         {data.recent_activity.map((activity, index) => (
-                                            <div
+                                            <ActivityItem
                                                 key={index}
-                                                className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-lg transition-colors border border-gray-100"
-                                            >
-                                                <div className="flex items-center">
-                                                    <span className="text-2xl mr-4">
-                                                        {activity.type === "order"
-                                                            ? "🛒"
-                                                            : "👤"}
-                                                    </span>
-                                                    <div>
-                                                        <p className="font-medium text-gray-800">
-                                                            {activity.title}
-                                                        </p>
-                                                        <p className="text-sm text-gray-600">
-                                                            {activity.description}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <span className="text-sm text-gray-500 whitespace-nowrap ml-4">
-                                                    {activity.time}
-                                                </span>
-                                            </div>
+                                                activity={activity}
+                                            />
                                         ))}
                                     </div>
                                 ) : (
