@@ -1,59 +1,66 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../../../config/api'; // Sesuaikan path
+import { API_BASE_URL } from '../../../config/api';
 
-const getAuthToken = () => {
-    return localStorage.getItem("auth_token");
-};
+/**
+ * Get auth token.
+ * @returns {string|null} Token
+ */
+const getAuthToken = () => localStorage.getItem("auth_token");
 
-const getAuthHeaders = () => {
-    const token = getAuthToken();
-    return token ? {
-        Authorization: `Bearer ${token}`
-    } : {};
-};
+/**
+ * Get auth headers.
+ * @returns {Object} Headers
+ */
+const getAuthHeaders = () => ({
+    Authorization: `Bearer ${getAuthToken()}`,
+    'Accept': 'application/json',
+});
 
+/**
+ * Book service for user book operations.
+ */
 const bookService = {
-    getAllBooks: async () => {
+    /**
+     * Get all books with filters/pagination.
+     * @param {Object} params - { q, category, min_price, max_price, sort_by, page, per_page }
+     * @returns {Promise<Object>} { data: [], meta: {} }
+     * @throws {Error} On failure
+     */
+    getAllBooks: async (params = {}) => {
         try {
-            // ❌ SALAH: API_URL tidak didefinisikan
-            // const response = await axios.get(API_URL);
-
-            // ✅ BENAR: Gunakan API_BASE_URL dengan endpoint lengkap
             const response = await axios.get(`${API_BASE_URL}/api/user/books`, {
-                headers: getAuthHeaders()
+                headers: getAuthHeaders(),
+                params: { ...params, page: params.page || 1, per_page: params.per_page || 20 },
+                timeout: 10000,
             });
-
-            // Return response.data (bisa array langsung atau object dengan property data)
-            // Sesuaikan dengan controller Anda
-            return response.data.data || response.data;
+            return response.data;
         } catch (error) {
-            console.error("Error fetching books:", error);
-            throw error.response?.data || error;
+            if (error.response?.status === 401) {
+                localStorage.removeItem('auth_token');
+                throw new Error('Session expired');
+            }
+            throw new Error(error.response?.data?.message || 'Failed to fetch books');
         }
     },
 
+    /**
+     * Get book by ID.
+     * @param {number} bookId
+     * @returns {Promise<Object>} Book data
+     * @throws {Error} On failure
+     */
     getBookById: async (bookId) => {
         try {
             const response = await axios.get(`${API_BASE_URL}/api/user/books/${bookId}`, {
-                headers: getAuthHeaders()
+                headers: getAuthHeaders(),
+                timeout: 5000,
             });
             return response.data.data || response.data;
         } catch (error) {
-            console.error("Error fetching book:", error);
-            throw error.response?.data || error;
-        }
-    },
-
-    searchBooks: async (query) => {
-        try {
-            const response = await axios.get(`${API_BASE_URL}/api/user/books/search`, {
-                params: { q: query },
-                headers: getAuthHeaders()
-            });
-            return response.data.data || response.data;
-        } catch (error) {
-            console.error("Error searching books:", error);
-            throw error.response?.data || error;
+            if (error.response?.status === 404) {
+                throw new Error('Book not found');
+            }
+            throw new Error(error.response?.data?.message || 'Failed to fetch book');
         }
     },
 };
