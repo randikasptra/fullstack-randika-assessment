@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 import UserTable from "../../components/admin/UserTable";
 import UserModal from "../../components/admin/UserModal";
-import SearchInput from "../../components/admin/SearchInput";
+import SearchInput from "../../components/admin/input/SearchInput";
 
 const UsersManager = () => {
     const [users, setUsers] = useState([]);

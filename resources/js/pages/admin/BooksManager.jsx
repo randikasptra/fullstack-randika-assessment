@@ -2,14 +2,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
-import BookTable from "../../components/admin/BookTable";
-import BookModal from "../../components/admin/BookModal";
-import SearchInput from "../../components/admin/SearchInput";
+import BookTable from "../../components/admin/book/BookTable";
+import BookModal from "../../components/admin/book/BookModal";
+import SearchInput from "../../components/admin/input/SearchInput";
 import * as bookService from "../../services/admin/bookService";
 import {
     BookOpenIcon,
     MagnifyingGlassIcon,
     TagIcon,
+    FunnelIcon,
 } from "@heroicons/react/24/outline";
 import echo from "../../../lib/echo";
 
@@ -21,6 +22,7 @@ const BooksManager = () => {
     const [modalType, setModalType] = useState("add");
     const [editBook, setEditBook] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("all");
     const [loading, setLoading] = useState(false);
 
     const subscribedChannels = useRef(new Set());
@@ -30,23 +32,34 @@ const BooksManager = () => {
         loadCategories();
     }, []);
 
+    // Filter berdasarkan search dan category (client-side)
     useEffect(() => {
-        const filtered = books.filter(
-            (book) =>
-                book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                (book.author &&
-                    book.author
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()))
-        );
-        setFilteredBooks(filtered);
-    }, [books, searchTerm]);
+        const filtered = Array.isArray(books)
+            ? books.filter((book) => {
+                  // Filter berdasarkan search term
+                  const matchesSearch =
+                      book.title
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase()) ||
+                      (book.author &&
+                          book.author
+                              .toLowerCase()
+                              .includes(searchTerm.toLowerCase()));
 
-    // ✅ FIXED: WebSocket setup sekali saja, setelah books loaded (one-time init)
+                  // Filter berdasarkan category
+                  const matchesCategory =
+                      selectedCategory === "all" ||
+                      book.category_id === parseInt(selectedCategory);
+
+                  return matchesSearch && matchesCategory;
+              })
+            : [];
+        setFilteredBooks(filtered);
+    }, [books, searchTerm, selectedCategory]);
+
+    // WebSocket setup sekali saja, setelah books loaded
     useEffect(() => {
         if (books.length === 0) return;
-
-        // Setup hanya jika belum diinisialisasi
         if (subscribedChannels.current.size > 0) return;
 
         console.log(
@@ -54,14 +67,9 @@ const BooksManager = () => {
             books.length,
             "books (one-time init)"
         );
-        console.log(
-            "📋 Admin: Book IDs:",
-            books.map((b) => b.id)
-        );
 
         books.forEach((book) => {
             const channelName = `products.${book.id}`;
-
             console.log(`🔌 Admin: Subscribing to ${channelName}...`);
 
             const channel = echo.channel(channelName);
@@ -76,24 +84,24 @@ const BooksManager = () => {
                 console.error(`❌ Admin: Error on ${channelName}:`, error);
             });
 
-            // Listen for stock updates
             channel.listen(".stock.updated", (data) => {
                 if (!data.id || typeof data.stock !== "number") {
                     console.warn("⚠️ Invalid stock data:", data);
                     return;
                 }
-                // Update book in real-time
+
                 setBooks((prevBooks) => {
-                    const updated = prevBooks.map((b) =>
-                        b.id === data.id
-                            ? { ...b, stock: data.stock, title: data.title }
-                            : b
-                    );
+                    const updated = Array.isArray(prevBooks)
+                        ? prevBooks.map((b) =>
+                              b.id === data.id
+                                  ? { ...b, stock: data.stock, title: data.title }
+                                  : b
+                          )
+                        : [];
                     console.log("🔄 Admin: Books updated in state");
                     return updated;
                 });
 
-                // Show toast notification
                 toast.info(
                     `📦 Stock updated: ${data.title} (Stok: ${data.stock})`,
                     {
@@ -106,12 +114,6 @@ const BooksManager = () => {
             subscribedChannels.current.add(channelName);
         });
 
-        console.log(
-            "📡 Admin: Active channels:",
-            Array.from(subscribedChannels.current)
-        );
-
-        // Cleanup hanya saat unmount component
         return () => {
             console.log("👋 Admin: Cleaning up WebSocket channels on unmount");
             subscribedChannels.current.forEach((channelName) => {
@@ -120,63 +122,59 @@ const BooksManager = () => {
             });
             subscribedChannels.current.clear();
         };
-    }, []); // Dependency kosong: run sekali saja setelah mount
+    }, []);
 
-    // Tambah useEffect untuk handle books change (jika ada book baru/hapus, subscribe dynamically)
+    // Handle books change (untuk book baru/hapus)
     useEffect(() => {
         if (books.length === 0) return;
 
-        // Subscribe ke book baru yang belum ada channel
-        books.forEach((book) => {
-            const channelName = `products.${book.id}`;
-            if (!subscribedChannels.current.has(channelName)) {
-                console.log(
-                    `➕ Admin: Adding new subscription for ${channelName}`
-                );
-                const channel = echo.channel(channelName);
-
-                channel.subscribed(() => {
+        Array.isArray(books) &&
+            books.forEach((book) => {
+                const channelName = `products.${book.id}`;
+                if (!subscribedChannels.current.has(channelName)) {
                     console.log(
-                        `✅ Admin: Added subscription to ${channelName}`
+                        `➕ Admin: Adding new subscription for ${channelName}`
                     );
-                });
+                    const channel = echo.channel(channelName);
 
-                channel.error((error) => {
-                    console.error(`❌ Admin: Error on ${channelName}:`, error);
-                });
-
-                // Listen for stock updates (sama seperti di atas)
-                channel.listen(".stock.updated", (data) => {
-                    console.log(
-                        `📦 Admin: Stock updated for book ${data.id}:`,
-                        data
-                    );
-
-                    setBooks((prevBooks) => {
-                        const updated = prevBooks.map((b) =>
-                            b.id === data.id
-                                ? { ...b, stock: data.stock, title: data.title }
-                                : b
+                    channel.subscribed(() => {
+                        console.log(
+                            `✅ Admin: Added subscription to ${channelName}`
                         );
-                        console.log("🔄 Admin: Books updated in state");
-                        return updated;
                     });
 
-                    toast.info(
-                        `📦 Stock updated: ${data.title} (Stok: ${data.stock})`,
-                        {
-                            position: "bottom-right",
-                            autoClose: 3000,
-                        }
-                    );
-                });
+                    channel.listen(".stock.updated", (data) => {
+                        setBooks((prevBooks) => {
+                            const updated = Array.isArray(prevBooks)
+                                ? prevBooks.map((b) =>
+                                      b.id === data.id
+                                          ? {
+                                                ...b,
+                                                stock: data.stock,
+                                                title: data.title,
+                                            }
+                                          : b
+                                  )
+                                : [];
+                            return updated;
+                        });
 
-                subscribedChannels.current.add(channelName);
-            }
-        });
+                        toast.info(
+                            `📦 Stock updated: ${data.title} (Stok: ${data.stock})`,
+                            {
+                                position: "bottom-right",
+                                autoClose: 3000,
+                            }
+                        );
+                    });
 
-        // Unsubscribe channel lama yang buku-nya sudah dihapus
-        const currentIds = new Set(books.map((b) => `products.${b.id}`));
+                    subscribedChannels.current.add(channelName);
+                }
+            });
+
+        const currentIds = new Set(
+            Array.isArray(books) ? books.map((b) => `products.${b.id}`) : []
+        );
         subscribedChannels.current.forEach((channelName) => {
             if (!currentIds.has(channelName)) {
                 console.log(
@@ -186,16 +184,17 @@ const BooksManager = () => {
                 subscribedChannels.current.delete(channelName);
             }
         });
-    }, [books.length]); // Re-run hanya jika jumlah books berubah (add/delete)
+    }, [books.length]);
 
     const loadBooks = async () => {
         setLoading(true);
         const result = await bookService.fetchBooks();
         if (result.success) {
-            console.log("📚 Admin: Loaded books:", result.data.length);
-            setBooks(result.data);
+            console.log("📚 Admin: Loaded books:", result.data?.length || 0);
+            setBooks(Array.isArray(result.data) ? result.data : []);
         } else {
             toast.error(result.error);
+            setBooks([]);
         }
         setLoading(false);
     };
@@ -203,14 +202,24 @@ const BooksManager = () => {
     const loadCategories = async () => {
         const result = await bookService.fetchCategories();
         if (result.success) {
-            setCategories(result.data);
+            setCategories(Array.isArray(result.data) ? result.data : []);
         } else {
             toast.error(result.error);
+            setCategories([]);
         }
     };
 
     const handleSearchChange = (term) => {
         setSearchTerm(term);
+    };
+
+    const handleCategoryChange = (e) => {
+        setSelectedCategory(e.target.value);
+    };
+
+    const handleResetFilter = () => {
+        setSelectedCategory("all");
+        setSearchTerm("");
     };
 
     const handleOpenAddModal = () => {
@@ -261,7 +270,7 @@ const BooksManager = () => {
 
         if (result.success) {
             handleCloseModal();
-            await loadBooks(); // Reload to get fresh data
+            await loadBooks();
         } else {
             toast.error(result.error);
         }
@@ -295,7 +304,7 @@ const BooksManager = () => {
                                 Total Buku
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-blue-600 mt-1">
-                                {books.length}
+                                {Array.isArray(books) ? books.length : 0}
                             </p>
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
@@ -311,7 +320,9 @@ const BooksManager = () => {
                                 Hasil Pencarian
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-cyan-600 mt-1">
-                                {filteredBooks.length}
+                                {Array.isArray(filteredBooks)
+                                    ? filteredBooks.length
+                                    : 0}
                             </p>
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
@@ -327,7 +338,9 @@ const BooksManager = () => {
                                 Kategori
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-purple-600 mt-1">
-                                {categories.length}
+                                {Array.isArray(categories)
+                                    ? categories.length
+                                    : 0}
                             </p>
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
@@ -337,23 +350,58 @@ const BooksManager = () => {
                 </div>
             </div>
 
-            {/* Action Bar */}
+            {/* Action Bar with Filter */}
             <div className="bg-white rounded-xl border border-blue-100 p-3 sm:p-4 mb-6 shadow-sm">
-                <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="w-full sm:w-auto sm:flex-1 sm:max-w-md">
-                        <SearchInput
-                            onSearchChange={handleSearchChange}
-                            value={searchTerm}
-                            placeholder="Cari buku berdasarkan judul atau penulis..."
-                        />
+                <div className="flex flex-col space-y-3">
+                    {/* Search and Add Button Row */}
+                    <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="w-full sm:flex-1 sm:max-w-md">
+                            <SearchInput
+                                onSearchChange={handleSearchChange}
+                                value={searchTerm}
+                                placeholder="Cari buku berdasarkan judul atau penulis..."
+                            />
+                        </div>
+                        <button
+                            onClick={handleOpenAddModal}
+                            className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-4 sm:px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 shadow hover:shadow-lg transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
+                        >
+                            <span className="text-base sm:text-lg">+</span>
+                            <span>Tambah Buku</span>
+                        </button>
                     </div>
-                    <button
-                        onClick={handleOpenAddModal}
-                        className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-4 sm:px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 shadow hover:shadow-lg transform hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
-                    >
-                        <span className="text-base sm:text-lg">+</span>
-                        <span>Tambah Buku</span>
-                    </button>
+
+                    {/* Category Filter Row */}
+                    <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2 text-slate-600">
+                            <FunnelIcon className="w-5 h-5" />
+                            <span className="text-sm font-medium">Filter:</span>
+                        </div>
+                        <select
+                            value={selectedCategory}
+                            onChange={handleCategoryChange}
+                            className="flex-1 sm:flex-none sm:min-w-[200px] px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white"
+                        >
+                            <option value="all">Semua Kategori</option>
+                            {Array.isArray(categories) &&
+                                categories.map((category) => (
+                                    <option
+                                        key={category.id}
+                                        value={category.id}
+                                    >
+                                        {category.name}
+                                    </option>
+                                ))}
+                        </select>
+                        {(selectedCategory !== "all" || searchTerm) && (
+                            <button
+                                onClick={handleResetFilter}
+                                className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium hover:bg-blue-50 rounded-lg transition-colors"
+                            >
+                                Reset Filter
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

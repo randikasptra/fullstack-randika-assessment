@@ -4,7 +4,7 @@ import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
 import CategoryTable from "../../components/admin/CategoryTable";
 import CategoryModal from "../../components/admin/CategoryModal";
-import SearchInputCategory from "../../components/admin/SearchInput";
+import SearchInputCategory from "../../components/admin/input/SearchInput";
 import * as categoryService from "../../services/admin/categoryService";
 import {
     Tag,

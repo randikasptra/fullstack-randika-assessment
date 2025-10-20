@@ -19,13 +19,29 @@ const getAuthHeaders = () => {
 };
 
 /**
- * Fetch all books
+ * Fetch all books with optional filters
+ * @param {Object} filters - Optional filters { category_id, search }
  */
-export const fetchBooks = async () => {
+export const fetchBooks = async (filters = {}) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/books`, {
+        const params = new URLSearchParams();
+
+        // Add category filter if provided
+        if (filters.category_id && filters.category_id !== 'all') {
+            params.append('category_id', filters.category_id);
+        }
+
+        // Add search filter if provided
+        if (filters.search) {
+            params.append('search', filters.search);
+        }
+
+        const url = `${API_BASE_URL}/api/books${params.toString() ? `?${params.toString()}` : ''}`;
+
+        const response = await axios.get(url, {
             headers: getAuthHeaders()
         });
+
         return { success: true, data: response.data };
     } catch (error) {
         console.error("Error fetching books:", error);
