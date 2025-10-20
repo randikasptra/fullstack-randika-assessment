@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
-import CategoryTable from "../../components/admin/CategoryTable";
-import CategoryModal from "../../components/admin/CategoryModal";
+import CategoryTable from "../../components/admin/category/CategoryTable";
+import CategoryModal from "../../components/admin/category/CategoryModal";
 import SearchInputCategory from "../../components/admin/input/SearchInput";
 import * as categoryService from "../../services/admin/categoryService";
 import {

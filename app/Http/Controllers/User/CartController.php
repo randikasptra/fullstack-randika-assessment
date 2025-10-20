@@ -8,27 +8,53 @@ use App\Models\Book;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\Access\AuthorizationException;
 
 class CartController extends Controller
 {
-    private const MAX_CART_ITEMS = 100; // Scalability limit
+    private const MAX_CART_ITEMS = 100;
 
     /**
      * Get user's cart items with total.
-     *
-     * @return JsonResponse
+     * Fixed: Handle deleted books gracefully
      */
     public function index(): JsonResponse
     {
         try {
+            $userId = auth()->id();
+
+            // Get cart items with books
             $cartItems = Cart::with('book')
-                ->where('user_id', auth()->id())
+                ->where('user_id', $userId)
                 ->limit(self::MAX_CART_ITEMS)
                 ->get();
 
-            $total = $cartItems->sum(fn ($item) => $item->book->price * $item->quantity);
+            // Remove cart items where book is null (deleted)
+            $invalidItems = $cartItems->filter(fn ($item) => is_null($item->book));
+
+            if ($invalidItems->isNotEmpty()) {
+                Log::warning('Removing cart items with deleted books', [
+                    'user_id' => $userId,
+                    'count' => $invalidItems->count(),
+                    'cart_ids' => $invalidItems->pluck('id')->toArray()
+                ]);
+
+                // Delete invalid cart items
+                Cart::whereIn('id', $invalidItems->pluck('id'))->delete();
+
+                // Reload cart items
+                $cartItems = Cart::with('book')
+                    ->where('user_id', $userId)
+                    ->limit(self::MAX_CART_ITEMS)
+                    ->get();
+            }
+
+            // Calculate total safely
+            $total = $cartItems->sum(function ($item) {
+                return $item->book ? ($item->book->price * $item->quantity) : 0;
+            });
 
             return response()->json([
                 'success' => true,
@@ -36,25 +62,31 @@ class CartController extends Controller
                 'total' => (float) $total,
             ]);
         } catch (AuthorizationException $e) {
+            Log::warning('Unauthorized cart access', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         } catch (\Exception $e) {
-            // \Log::error('Cart index error: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to fetch cart'], 500);
+            Log::error('Cart index error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch cart',
+                'error' => app()->environment('local') ? $e->getMessage() : null
+            ], 500);
         }
     }
 
     /**
      * Add or update item in cart.
-     *
-     * @param Request $request
-     * @return JsonResponse
      */
     public function add(Request $request): JsonResponse
     {
         try {
             $request->validate([
                 'book_id' => 'required|exists:books,id',
-                'quantity' => 'integer|min:1|max:50', // Per add limit
+                'quantity' => 'nullable|integer|min:1|max:50',
             ]);
 
             $userId = auth()->id();
@@ -65,20 +97,43 @@ class CartController extends Controller
 
             DB::beginTransaction();
             try {
-                $this->validateStock($book, $quantity, $userId, $bookId);
+                // Check if item already in cart
+                $existingCart = Cart::where('user_id', $userId)
+                    ->where('book_id', $bookId)
+                    ->first();
 
+                $currentQuantity = $existingCart ? $existingCart->quantity : 0;
+                $newQuantity = $currentQuantity + $quantity;
+
+                // Validate stock
+                if ($book->stock < $newQuantity) {
+                    throw ValidationException::withMessages([
+                        'quantity' => "Stok tidak cukup. Tersedia: {$book->stock}"
+                    ]);
+                }
+
+                // Update or create cart item
                 Cart::updateOrCreate(
                     ['user_id' => $userId, 'book_id' => $bookId],
-                    ['quantity' => DB::raw('quantity + ' . $quantity)]
+                    ['quantity' => $newQuantity]
                 );
 
                 DB::commit();
 
-                $cart = Cart::with('book')->where('user_id', $userId)->where('book_id', $bookId)->first();
+                $cart = Cart::with('book')
+                    ->where('user_id', $userId)
+                    ->where('book_id', $bookId)
+                    ->first();
+
+                Log::info('Item added to cart', [
+                    'user_id' => $userId,
+                    'book_id' => $bookId,
+                    'quantity' => $newQuantity
+                ]);
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'Added to cart successfully',
+                    'message' => 'Berhasil ditambahkan ke keranjang',
                     'data' => $cart,
                 ]);
             } catch (\Exception $txE) {
@@ -86,38 +141,67 @@ class CartController extends Controller
                 throw $txE;
             }
         } catch (ValidationException $e) {
-            return response()->json(['success' => false, 'message' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first()
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to add to cart: ' . $e->getMessage()], 500);
+            Log::error('Add to cart error', [
+                'user_id' => auth()->id(),
+                'book_id' => $request->book_id ?? null,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan ke keranjang'
+            ], 500);
         }
     }
 
     /**
      * Update cart item quantity.
-     *
-     * @param Request $request
-     * @param int $id
-     * @return JsonResponse
      */
     public function update(Request $request, int $id): JsonResponse
     {
         try {
-            $request->validate(['quantity' => 'required|integer|min:1|max:50']);
+            $request->validate([
+                'quantity' => 'required|integer|min:1|max:50'
+            ]);
 
             $cart = Cart::where('user_id', auth()->id())->findOrFail($id);
             $book = $cart->book;
 
+            if (!$book) {
+                // Book deleted, remove cart item
+                $cart->delete();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Buku sudah tidak tersedia'
+                ], 404);
+            }
+
             DB::beginTransaction();
             try {
-                $this->validateStock($book, $request->quantity, auth()->id(), $book->id);
+                // Validate stock
+                if ($book->stock < $request->quantity) {
+                    throw ValidationException::withMessages([
+                        'quantity' => "Stok tidak cukup. Tersedia: {$book->stock}"
+                    ]);
+                }
 
                 $cart->update(['quantity' => $request->quantity]);
 
                 DB::commit();
 
+                Log::info('Cart updated', [
+                    'user_id' => auth()->id(),
+                    'cart_id' => $id,
+                    'quantity' => $request->quantity
+                ]);
+
                 return response()->json([
                     'success' => true,
-                    'message' => 'Cart updated successfully',
+                    'message' => 'Keranjang berhasil diperbarui',
                     'data' => $cart->load('book'),
                 ]);
             } catch (\Exception $txE) {
@@ -125,17 +209,25 @@ class CartController extends Controller
                 throw $txE;
             }
         } catch (ValidationException $e) {
-            return response()->json(['success' => false, 'message' => $e->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $e->validator->errors()->first()
+            ], 422);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to update cart'], 500);
+            Log::error('Update cart error', [
+                'user_id' => auth()->id(),
+                'cart_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui keranjang'
+            ], 500);
         }
     }
 
     /**
      * Remove cart item.
-     *
-     * @param int $id
-     * @return JsonResponse
      */
     public function destroy(int $id): JsonResponse
     {
@@ -143,54 +235,55 @@ class CartController extends Controller
             $cart = Cart::where('user_id', auth()->id())->findOrFail($id);
             $cart->delete();
 
+            Log::info('Cart item removed', [
+                'user_id' => auth()->id(),
+                'cart_id' => $id
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Item removed successfully',
+                'message' => 'Item berhasil dihapus',
             ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to remove item'], 500);
+            Log::error('Remove cart item error', [
+                'user_id' => auth()->id(),
+                'cart_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus item'
+            ], 500);
         }
     }
 
     /**
      * Clear entire cart.
-     *
-     * @return JsonResponse
      */
     public function clear(): JsonResponse
     {
         try {
-            DB::transaction(fn () => Cart::where('user_id', auth()->id())->delete());
+            $userId = auth()->id();
+
+            DB::transaction(function () use ($userId) {
+                Cart::where('user_id', $userId)->delete();
+            });
+
+            Log::info('Cart cleared', ['user_id' => $userId]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cart cleared successfully',
+                'message' => 'Keranjang berhasil dikosongkan',
             ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => 'Failed to clear cart'], 500);
+            Log::error('Clear cart error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengosongkan keranjang'
+            ], 500);
         }
     }
-
-    /**
-     * Validate stock availability.
-     *
-     * @param Book $book
-     * @param int $quantity
-     * @param int $userId
-     * @param int $bookId
-     * @return void
-     * @throws ValidationException
-     */
-    private function validateStock(Book $book, int $quantity, int $userId, int $bookId): void
-    {
-        $currentQuantity = Cart::where('user_id', $userId)->where('book_id', $bookId)->value('quantity') ?? 0;
-        $totalQuantity = $currentQuantity + $quantity;
-
-        if ($book->stock < $totalQuantity) {
-            throw ValidationException::withMessages(['quantity' => 'Insufficient stock. Available: ' . $book->stock]);
-        }
-    }
-
-    // Contoh Test (tests/Feature/CartControllerTest.php)
-    // public function test_add_to_cart_with_low_stock() { ... expect 422; }
 }
