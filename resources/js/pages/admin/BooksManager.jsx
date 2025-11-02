@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import AdminLayout from "../../layouts/AdminLayout";
+
 import BookTable from "../../components/admin/book/BookTable";
 import BookModal from "../../components/admin/book/BookModal";
 import SearchInput from "../../components/admin/input/SearchInput";
@@ -27,67 +28,11 @@ const BooksManager = () => {
 
     const subscribedChannels = useRef(new Set());
 
-    // Replace SEMUA WebSocket useEffect di BooksManager.jsx
-    // Hapus yang lama, ganti dengan ini:
-
     useEffect(() => {
         loadBooks();
         loadCategories();
+    }, []);
 
-        // ⭐ FIX: Subscribe ke GLOBAL channel 'products' sekali saja
-        console.log("🎧 Admin: Subscribing to global products channel");
-
-        const channel = echo.channel("products");
-
-        channel.subscribed(() => {
-            console.log(
-                "✅ Admin: Successfully subscribed to products channel"
-            );
-        });
-
-        channel.error((error) => {
-            console.error("❌ Admin: WebSocket error:", error);
-        });
-
-        channel.listen(".stock.updated", (data) => {
-            console.log("📦 Admin: Stock updated:", data);
-
-            if (!data.id || typeof data.stock !== "number") {
-                console.warn("⚠️ Invalid stock data:", data);
-                return;
-            }
-
-            // Update state
-            setBooks((prevBooks) => {
-                const updated = Array.isArray(prevBooks)
-                    ? prevBooks.map((b) =>
-                          b.id === data.id
-                              ? { ...b, stock: data.stock, title: data.title }
-                              : b
-                      )
-                    : [];
-                console.log("🔄 Admin: Books updated in state");
-                return updated;
-            });
-
-            // Show toast notification
-            toast.info(
-                `📦 Stock updated: ${data.title} (Stok: ${data.stock})`,
-                {
-                    position: "bottom-right",
-                    autoClose: 3000,
-                }
-            );
-        });
-
-        // Cleanup on unmount
-        return () => {
-            console.log("🧹 Admin: Leaving products channel");
-            echo.leave("products");
-        };
-    }, []); // Empty deps - only run once
-
-    // Filter berdasarkan search dan category (client-side)
     useEffect(() => {
         const filtered = Array.isArray(books)
             ? books.filter((book) => {
@@ -112,9 +57,11 @@ const BooksManager = () => {
         setFilteredBooks(filtered);
     }, [books, searchTerm, selectedCategory]);
 
-    // WebSocket setup sekali saja, setelah books loaded
+    // WebSocket setup sekali saja, setelah books loaded (one-time init)
     useEffect(() => {
         if (books.length === 0) return;
+
+        // Setup hanya jika belum diinisialisasi
         if (subscribedChannels.current.size > 0) return;
 
         console.log(
@@ -122,9 +69,14 @@ const BooksManager = () => {
             books.length,
             "books (one-time init)"
         );
+        console.log(
+            "📋 Admin: Book IDs:",
+            books.map((b) => b.id)
+        );
 
         books.forEach((book) => {
             const channelName = `products.${book.id}`;
+
             console.log(`🔌 Admin: Subscribing to ${channelName}...`);
 
             const channel = echo.channel(channelName);
@@ -139,12 +91,13 @@ const BooksManager = () => {
                 console.error(`❌ Admin: Error on ${channelName}:`, error);
             });
 
+            // Listen for stock updates
             channel.listen(".stock.updated", (data) => {
                 if (!data.id || typeof data.stock !== "number") {
                     console.warn("⚠️ Invalid stock data:", data);
                     return;
                 }
-
+                // Update book in real-time
                 setBooks((prevBooks) => {
                     const updated = Array.isArray(prevBooks)
                         ? prevBooks.map((b) =>
@@ -161,6 +114,7 @@ const BooksManager = () => {
                     return updated;
                 });
 
+                // Show toast notification
                 toast.info(
                     `📦 Stock updated: ${data.title} (Stok: ${data.stock})`,
                     {
@@ -173,6 +127,12 @@ const BooksManager = () => {
             subscribedChannels.current.add(channelName);
         });
 
+        console.log(
+            "📡 Admin: Active channels:",
+            Array.from(subscribedChannels.current)
+        );
+
+        // Cleanup hanya saat unmount component
         return () => {
             console.log("👋 Admin: Cleaning up WebSocket channels on unmount");
             subscribedChannels.current.forEach((channelName) => {
@@ -181,9 +141,9 @@ const BooksManager = () => {
             });
             subscribedChannels.current.clear();
         };
-    }, []);
+    }, []); // Dependency kosong: run sekali saja setelah mount
 
-    // Handle books change (untuk book baru/hapus)
+    // Handle books change (untuk book baru/hapus, subscribe dynamically)
     useEffect(() => {
         if (books.length === 0) return;
 
@@ -202,7 +162,17 @@ const BooksManager = () => {
                         );
                     });
 
+                    channel.error((error) => {
+                        console.error(`❌ Admin: Error on ${channelName}:`, error);
+                    });
+
+                    // Listen for stock updates (sama seperti di atas)
                     channel.listen(".stock.updated", (data) => {
+                        console.log(
+                            `📦 Admin: Stock updated for book ${data.id}:`,
+                            data
+                        );
+
                         setBooks((prevBooks) => {
                             const updated = Array.isArray(prevBooks)
                                 ? prevBooks.map((b) =>
@@ -215,6 +185,7 @@ const BooksManager = () => {
                                           : b
                                   )
                                 : [];
+                            console.log("🔄 Admin: Books updated in state");
                             return updated;
                         });
 
@@ -231,6 +202,7 @@ const BooksManager = () => {
                 }
             });
 
+        // Unsubscribe channel lama yang buku-nya sudah dihapus
         const currentIds = new Set(
             Array.isArray(books) ? books.map((b) => `products.${b.id}`) : []
         );
@@ -243,7 +215,7 @@ const BooksManager = () => {
                 subscribedChannels.current.delete(channelName);
             }
         });
-    }, [books.length]);
+    }, [books.length]); // Re-run hanya jika jumlah books berubah (add/delete)
 
     const loadBooks = async () => {
         setLoading(true);
@@ -329,7 +301,7 @@ const BooksManager = () => {
 
         if (result.success) {
             handleCloseModal();
-            await loadBooks();
+            await loadBooks(); // Reload to get fresh data
         } else {
             toast.error(result.error);
         }
@@ -379,9 +351,7 @@ const BooksManager = () => {
                                 Hasil Pencarian
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-cyan-600 mt-1">
-                                {Array.isArray(filteredBooks)
-                                    ? filteredBooks.length
-                                    : 0}
+                                {Array.isArray(filteredBooks) ? filteredBooks.length : 0}
                             </p>
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
@@ -397,9 +367,7 @@ const BooksManager = () => {
                                 Kategori
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-purple-600 mt-1">
-                                {Array.isArray(categories)
-                                    ? categories.length
-                                    : 0}
+                                {Array.isArray(categories) ? categories.length : 0}
                             </p>
                         </div>
                         <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 sm:ml-0">
